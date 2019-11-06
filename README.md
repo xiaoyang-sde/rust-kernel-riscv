@@ -1,4 +1,8 @@
-# AWS Certified Solutions Architect – Associate 2019 Study Notes
+# AWS Certified Solutions Architect – Associate Exam
+
+[![LICENSE](https://img.shields.io/github/license/Siujoeng-Lau/AWS-CSA-Notes-2019.svg?style=for-the-badge)](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/blob/master/LICENSE)
+[![Pull requests](https://img.shields.io/github/issues-pr-closed/Siujoeng-Lau/AWS-CSA-Notes-2019?style=for-the-badge)](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/pulls)
+[![GitHub stars](https://img.shields.io/github/stars/Siujoeng-Lau/AWS-CSA-Notes-2019?style=for-the-badge)](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/stargazers)
 
 ## Introduction
 
@@ -10,18 +14,18 @@ Detailed study notes of **AWS Solutions Architect – Associate Exam** are based
 
 ## Study Path
 
-*   [AWS Basic Concepts]()
+*   [AWS Basic Concepts](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/blob/master/Study%20Notes/Basic%20Concepts.md)
 
-*   [IAM]() (Users, Roles, Access Key)
+*   [IAM](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/blob/master/Study%20Notes/IAM.md) (Users, Roles, Access Key)
 
-*   [S3]() (Storage Tiers, Encryption, Versioning, Cross-region replication, Lifecycle)
+*   [S3](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/blob/master/Study%20Notes/S3.md) (Storage Tiers, Encryption, Versioning, Cross-region replication, Lifecycle)
 
-*   [EC2]() (AZ, Auto-scaling, Load balancer, Security group)
+*   [EC2](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/blob/master/Study%20Notes/EC2.md) (AZ, Auto-scaling, Load balancer, Security group)
 
-*   [Databases]() (RDS, DynamoDB, Redshift, Aurora, ElastiCache)
+*   [Databases](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/blob/master/Study%20Notes/Databases.md) (RDS, DynamoDB, Redshift, Aurora, ElastiCache)
 
-*   [VPC]() (Subnet, NAT gateway, Bastion Host, Network ACL)
+*   [VPC](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/blob/master/Study%20Notes/VPC.md) (Subnet, NAT gateway, Bastion Host, Network ACL)
 
-*   [Applications]() (SQS, SWF, SNS, API Gateway, Kinesis, Cognito)
+*   [Applications](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/blob/master/Study%20Notes/Applications.md) (SQS, SWF, SNS, API Gateway, Kinesis, Cognito)
 
-*   [Lambda]()
+*   [Lambda](https://github.com/Siujoeng-Lau/AWS-CSA-Notes-2019/blob/master/Study%20Notes/Lambda.md)
