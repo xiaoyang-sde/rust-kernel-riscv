@@ -1,0 +1,13 @@
+# Rust Toolchain
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+.gdb_history
+
+# Configuration
+.vscode
+
+# macOS
+.DS_Store
