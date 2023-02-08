@@ -19,7 +19,7 @@ pub fn rust_main() -> ! {
     logging::init();
 
     info!("hello, world!");
-    
+
     sbi::shutdown();
 }
 

@@ -9,7 +9,7 @@ struct Console;
 impl Write for Console {
     fn write_str(&mut self, string: &str) -> fmt::Result {
         for char in string.bytes() {
-            sbi::console_putchar(char as usize);
+            sbi::console_putchar(char.into());
         }
         Ok(())
     }
