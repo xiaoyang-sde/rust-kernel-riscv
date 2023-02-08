@@ -1,16 +1,16 @@
 //! The `console` module contains functions that interacts with the debug console.
 //! It exports useful macros such as `print!` and `println!`.
 
-use crate::sbi;
+use crate::write;
 use core::fmt::{self, Write};
+
+const STDOUT: usize = 1;
 
 struct Console;
 
 impl Write for Console {
     fn write_str(&mut self, string: &str) -> fmt::Result {
-        for char in string.bytes() {
-            sbi::console_putchar(char.into());
-        }
+        write(STDOUT, string.as_bytes());
         Ok(())
     }
 }
