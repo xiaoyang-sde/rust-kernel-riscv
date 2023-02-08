@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-extern crate kernel_std;
+extern crate kernel_lib;
 
 use log::info;
 use core::arch::asm;

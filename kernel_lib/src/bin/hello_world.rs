@@ -3,7 +3,7 @@
 
 use log::info;
 
-extern crate kernel_std;
+extern crate kernel_lib;
 
 #[no_mangle]
 fn main() -> i32 {
