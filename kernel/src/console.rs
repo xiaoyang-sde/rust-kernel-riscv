@@ -1,3 +1,6 @@
+//! The `console` module contains functions that interacts with the debug console.
+//! It exports useful macros such as `print!` and `println!`.
+
 use crate::sbi::console_putchar;
 use core::fmt::{self, Write};
 
@@ -16,6 +19,7 @@ pub fn print(args: fmt::Arguments) {
     Console.write_fmt(args).unwrap();
 }
 
+/// Print to the debug console.
 #[macro_export]
 macro_rules! print {
     ($fmt: literal $(, $($arg: tt)+)?) => {
@@ -23,9 +27,10 @@ macro_rules! print {
     }
 }
 
+/// Print to the debug console, with a newline.
 #[macro_export]
 macro_rules! println {
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::console::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
+        $crate::console::print(format_args!(concat!($fmt, '\n') $(, $($arg)+)?));
     }
 }

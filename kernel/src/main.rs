@@ -19,7 +19,11 @@ pub fn rust_main() -> ! {
     shutdown();
 }
 
+/// The `.bss` section in an object file holds uninitialized data.
+/// The kernel initializes the data with zeros.
 fn clear_bss() {
+    // The `sbss` and `ebss` symbols are declared in the `src/linker.ld`,
+    // which represent the start address and the end address of the `.bss` section.
     extern "C" {
         fn sbss();
         fn ebss();
