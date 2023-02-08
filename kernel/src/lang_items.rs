@@ -4,20 +4,23 @@
 //! Since the kernel doesn't depend on the `std` crate, it has to implement some
 //! lang items, such as the `panic_handler`.
 
-use crate::{println, sbi::shutdown};
+use log::error;
+
 use core::panic::PanicInfo;
+
+use crate::sbi;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     if let Some(location) = info.location() {
-        println!(
-            "[kernel] panic at {}:{}: {}",
+        error!(
+            " panic at {}:{}: {}",
             location.file(),
             location.line(),
             info.message().unwrap()
         );
     } else {
-        println!("[kernel] panic: {}", info.message().unwrap());
+        error!("panic: {}", info.message().unwrap());
     }
-    shutdown();
+    sbi::shutdown();
 }

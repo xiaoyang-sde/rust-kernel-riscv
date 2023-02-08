@@ -7,3 +7,4 @@ edition = "2021"
 debug = true
 
 [dependencies]
+log = "0.4.17"

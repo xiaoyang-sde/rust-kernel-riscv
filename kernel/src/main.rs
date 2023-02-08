@@ -4,19 +4,23 @@
 
 mod console;
 mod lang_items;
+mod logging;
 mod sbi;
 
 use core::arch::global_asm;
 
-use crate::sbi::shutdown;
+use log::info;
 
 global_asm!(include_str!("boot.asm"));
 
 #[no_mangle]
 pub fn rust_main() -> ! {
     clear_bss();
-    println!("[kernel] hello, world!");
-    shutdown();
+    logging::init();
+
+    info!("hello, world!");
+    
+    sbi::shutdown();
 }
 
 /// The `.bss` section in an object file holds uninitialized data.

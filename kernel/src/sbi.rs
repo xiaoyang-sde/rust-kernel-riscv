@@ -4,7 +4,8 @@
 //! For more deetails, please refer to the
 //! [RISC-V SBI Specification](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/riscv-sbi.adoc).
 
-use crate::println;
+use log::info;
+
 use core::arch::asm;
 
 const CONSOLE_PUTCHAR_EXTENSION: usize = 0x01;
@@ -33,7 +34,7 @@ pub fn console_putchar(char: usize) {
 /// Put all the harts to shutdown state.
 #[inline]
 pub fn shutdown() -> ! {
-    println!("[kernel] shutdown");
+    info!("shutdown");
     sbi_call(SYSTEM_RESET_EXTENSION, 0, 0, 0);
     panic!("failed to shutdown");
 }
