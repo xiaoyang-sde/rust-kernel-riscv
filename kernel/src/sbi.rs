@@ -1,7 +1,7 @@
 //! The `sbi` module contains functions that invokes the RISC-V interface.
 //! SBI is an interface between the Supervisor Execution Environment and the supervisor.
 //! It allows the supervisor to execute some privileged operations with the `ecall` instruction.
-//! For more deetails, please refer to the
+//! For more details, please refer to the
 //! [RISC-V SBI Specification](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/riscv-sbi.adoc).
 
 use log::info;
