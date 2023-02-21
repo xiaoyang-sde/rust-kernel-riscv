@@ -26,13 +26,15 @@ pub fn rust_main() -> ! {
 /// The `.bss` section in an object file holds uninitialized data.
 /// The kernel initializes the data with zeros.
 fn clear_bss() {
-    // The `sbss` and `ebss` symbols are declared in the `src/linker.ld`,
+    // The `bss_start` and `bss_end` symbols are declared in the `src/linker.ld`,
     // which represent the start address and the end address of the `.bss` section.
+    // For more details, please refer to the
+    // [ld documentation](https://sourceware.org/binutils/docs/ld/Source-Code-Reference.html).
     extern "C" {
-        fn sbss();
-        fn ebss();
+        fn bss_start();
+        fn bss_end();
     }
 
-    (sbss as usize..ebss as usize)
+    (bss_start as usize..bss_end as usize)
         .for_each(|address| unsafe { (address as *mut u8).write_volatile(0) })
 }
