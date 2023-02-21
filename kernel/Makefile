@@ -1,28 +1,22 @@
-.PHONY: build qemu gdb-client gdb-server
+.PHONY: build qemu qemu-debug
 
 build:
-	cargo build --release
+	cargo build
 	rust-objcopy \
-        --strip-all target/riscv64gc-unknown-none-elf/release/kernel \
-        -O binary target/riscv64gc-unknown-none-elf/release/kernel.bin
+        --strip-all target/riscv64gc-unknown-none-elf/debug/kernel \
+        -O binary target/riscv64gc-unknown-none-elf/debug/kernel.bin
 
 qemu:
 	qemu-system-riscv64 \
         -machine virt \
         -nographic \
         -bios ../bootloader/opensbi-jump.bin \
-        -device loader,file=target/riscv64gc-unknown-none-elf/release/kernel.bin,addr=0x80200000
+        -device loader,file=target/riscv64gc-unknown-none-elf/debug/kernel.bin,addr=0x80200000
 
-gdb-server:
+qemu-debug:
 	qemu-system-riscv64 \
         -machine virt \
         -nographic \
         -bios ../bootloader/opensbi-jump.bin \
-        -device loader,file=target/riscv64gc-unknown-none-elf/release/kernel.bin,addr=0x80200000 \
-		-s -S
-
-gdb-client:
-	gdb-multiarch \
-        -ex 'file target/riscv64gc-unknown-none-elf/release/kernel' \
-        -ex 'set arch riscv:rv64' \
-        -ex 'target remote localhost:1234'
+        -device loader,file=target/riscv64gc-unknown-none-elf/debug/kernel.bin,addr=0x80200000 \
+        -s -S
