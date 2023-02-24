@@ -17,9 +17,10 @@ fn sbi_call(extension: usize, function: usize, arg0: usize, arg1: usize) -> (isi
     unsafe {
         asm!(
             "ecall",
-            in("a0") arg0, in("a1") arg1,
-            in("a6") function, in("a7") extension,
-            lateout("a0") error, lateout("a1") value,
+            inlateout("a0") arg0 => error,
+            inlateout("a1") arg1 => value,
+            in("a6") function,
+            in("a7") extension,
         )
     }
     (error, value)
