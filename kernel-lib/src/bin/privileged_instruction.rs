@@ -3,8 +3,8 @@
 
 extern crate kernel_lib;
 
-use log::info;
 use core::arch::asm;
+use log::info;
 
 #[no_mangle]
 fn main() -> i32 {

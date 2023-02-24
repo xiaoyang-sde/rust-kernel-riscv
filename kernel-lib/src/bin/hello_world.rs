@@ -7,6 +7,6 @@ extern crate kernel_lib;
 
 #[no_mangle]
 fn main() -> i32 {
-    info!("hello, world");
+    info!("hello, world!");
     0
 }
