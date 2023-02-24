@@ -11,7 +11,7 @@ use core::arch::global_asm;
 
 use log::info;
 
-global_asm!(include_str!("boot.asm"));
+global_asm!(include_str!("asm/boot.asm"));
 
 #[no_mangle]
 pub fn rust_main() -> ! {
