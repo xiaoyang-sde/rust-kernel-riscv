@@ -22,15 +22,12 @@ pub fn print(args: fmt::Arguments) {
 /// Print to the debug console.
 #[macro_export]
 macro_rules! print {
-    ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::console::print(format_args!($fmt $(, $($arg)+)?));
-    }
+    ($($arg:tt)*) => ($crate::console::print(format_args!($($arg)*)));
 }
 
 /// Print to the debug console, with a newline.
 #[macro_export]
 macro_rules! println {
-    ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::console::print(format_args!(concat!($fmt, '\n') $(, $($arg)+)?));
-    }
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
