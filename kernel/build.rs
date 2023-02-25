@@ -1,7 +1,7 @@
 use std::fs::{read_dir, File};
 use std::io::{Result, Write};
 
-static TARGET_PATH: &str = "../kernel-lib/target/riscv64gc-unknown-none-bin/debug/";
+static TARGET_PATH: &str = "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/";
 
 fn main() {
     println!("cargo:rerun-if-changed={}", TARGET_PATH);
@@ -23,25 +23,28 @@ fn insert_bin_data() -> Result<()> {
 
     writeln!(
         linkage_file,
-        r#".align 3
+        r#"    .align 3
     .section .data
-    .global _bin_num
-_bin_num:
-    .quad {}"#,
+    .global _bin_address_size
+    .global _bin_address
+
+_bin_address_size:
+    .quad {}
+
+_bin_address:"#,
         bin_vec.len()
     )?;
 
     for i in 0..bin_vec.len() {
-        writeln!(linkage_file, r#"    .quad bin_{}_start"#, i)?;
+        writeln!(
+            linkage_file,
+            r#"    .quad bin_{0}_start
+    .quad bin_{0}_end"#,
+            i
+        )?;
     }
-    writeln!(
-        linkage_file,
-        r#"    .quad bin_{}_end"#,
-        bin_vec.len() - 1
-    )?;
 
     for (i, bin) in bin_vec.iter().enumerate() {
-        println!("bin_{}: {}", i, bin);
         writeln!(
             linkage_file,
             r#"

@@ -2,24 +2,26 @@
 #![no_main]
 #![feature(panic_info_message)]
 
+mod batch;
 mod console;
 mod lang_items;
 mod logging;
 mod sbi;
+mod sync;
 
 use core::arch::global_asm;
-
 use log::info;
 
 global_asm!(include_str!("asm/boot.asm"));
+global_asm!(include_str!("asm/linkage.asm"));
 
 #[no_mangle]
 pub fn rust_main() -> ! {
     clear_bss();
     logging::init();
 
-    info!("hello, world!");
-
+    info!("rust-kernel has booted");
+    batch::init();
     sbi::shutdown();
 }
 
