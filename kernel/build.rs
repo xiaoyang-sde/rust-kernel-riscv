@@ -4,7 +4,7 @@ use std::io::{Result, Write};
 static TARGET_PATH: &str = "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/";
 
 fn main() {
-    println!("cargo:rerun-if-changed={}", TARGET_PATH);
+    println!("cargo:rerun-if-changed={TARGET_PATH}");
     insert_bin_data().unwrap();
 }
 
@@ -12,7 +12,6 @@ fn insert_bin_data() -> Result<()> {
     let mut linkage_file = File::create("src/asm/linkage.asm").unwrap();
     let mut bin_vec: Vec<_> = read_dir("../kernel-lib/src/bin")
         .unwrap()
-        .into_iter()
         .map(|dir_entry| {
             let mut name_with_ext = dir_entry.unwrap().file_name().into_string().unwrap();
             name_with_ext.drain(name_with_ext.find('.').unwrap()..name_with_ext.len());
@@ -38,9 +37,8 @@ _bin_address:"#,
     for i in 0..bin_vec.len() {
         writeln!(
             linkage_file,
-            r#"    .quad bin_{0}_start
-    .quad bin_{0}_end"#,
-            i
+            r#"    .quad bin_{i}_start
+    .quad bin_{i}_end"#
         )?;
     }
 
@@ -49,12 +47,11 @@ _bin_address:"#,
             linkage_file,
             r#"
     .section .data
-    .global bin_{0}_start
-    .global bin_{0}_end
-bin_{0}_start:
-    .incbin "{2}{1}.bin"
-bin_{0}_end:"#,
-            i, bin, TARGET_PATH
+    .global bin_{i}_start
+    .global bin_{i}_end
+bin_{i}_start:
+    .incbin "{TARGET_PATH}{bin}.bin"
+bin_{i}_end:"#
         )?;
     }
     Ok(())

@@ -8,6 +8,8 @@ mod lang_items;
 mod logging;
 mod sbi;
 mod sync;
+mod syscall;
+mod trap;
 
 use core::arch::global_asm;
 use log::info;
@@ -21,8 +23,9 @@ pub fn rust_main() -> ! {
     logging::init();
 
     info!("rust-kernel has booted");
-    batch::init();
-    sbi::shutdown();
+    trap::init();
+    batch::runtime::init();
+    batch::runtime::load_next_bin();
 }
 
 /// The `.bss` section in an object file holds uninitialized data.
