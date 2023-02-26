@@ -1,4 +1,4 @@
-use riscv::register::sstatus::{self, Sstatus, SPP};
+use riscv::register::sstatus::{self, Sstatus};
 
 #[repr(C)]
 pub struct TrapContext {
@@ -13,10 +13,6 @@ impl TrapContext {
     }
 
     pub fn init_context(sepc: usize, stack_pointer: usize) -> Self {
-        unsafe {
-            sstatus::set_spp(SPP::User);
-        }
-
         let mut context = Self {
             register: [0; 32],
             sstatus: sstatus::read(),

@@ -14,34 +14,37 @@
 .align 2
 
 _trap:
-  // Swap sp and sscratch in an atomic operation
-  // 1. Save the user stack pointer to sscratch
-  // 2. Read the kernel stack pointer from sscratch
+  # Swap sp and sscratch in an atomic operation
+  # 1. Save the user stack pointer to sscratch
+  # 2. Read the kernel stack pointer from sscratch
   csrrw sp, sscratch, sp
 
-  // Allocate a `TrapContext` on the kernel stack
+  # Allocate a `TrapContext` on the kernel stack
   addi sp, sp, -34*8
 
-  // Save registers x1 through x31 to the stack
-  .set n, 1
-  .rept 31
+  # Save register x1
+  SAVE_REGISTER 1
+
+  # Save registers x3 through x31 to the stack
+  .set n, 3
+  .rept 29
     SAVE_REGISTER %n
     .set n, n + 1
   .endr
 
-  // Save the sstatus register to the stack
+  # Save the sstatus register to the stack
   csrr t0, sstatus
   sd t0, 32*8(sp)
 
-  // Save the sepc register to the stack
+  # Save the sepc register to the stack
   csrr t1, sepc
   sd t1, 33*8(sp)
 
-  // Save the user stack pointer on the kernel stack
+  # Save the user stack pointer on the kernel stack
   csrr t2, sscratch
   sd t2, 2*8(sp)
 
-  // Call trap handler with the `TrapContext` as its argument
+  # Call trap handler with the `TrapContext` as its argument
   mv a0, sp
   call trap_handler
 
@@ -62,17 +65,20 @@ _restore:
     csrw sscratch, t2
 
     # Restore registers x1 through x31 from the stack
-    .set n, 1
-    .rept 31
-        LOAD_REGISTER %n
-        .set n, n + 1
+    LOAD_REGISTER 1
+
+    # Save registers x3 through x31 to the stack
+    .set n, 3
+    .rept 29
+      LOAD_REGISTER %n
+      .set n, n + 1
     .endr
 
     # Deallocate the `TrapContext`
     addi sp, sp, 34*8
 
-    // Swap sp and sscratch in an atomic operation
-    // 1. Save the kernel stack pointer to sscratch
-    // 2. Read the user stack pointer from sscratch
+    # Swap sp and sscratch in an atomic operation
+    # 1. Save the kernel stack pointer to sscratch
+    # 2. Read the user stack pointer from sscratch
     csrrw sp, sscratch, sp
     sret

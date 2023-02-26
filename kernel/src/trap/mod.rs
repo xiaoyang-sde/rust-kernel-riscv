@@ -3,8 +3,7 @@ use crate::{batch::runtime, syscall};
 use core::arch::global_asm;
 use log::error;
 use riscv::register::{
-    scause::{self, Exception},
-    stval, stvec,
+    scause::{self, Exception}, stvec,
     stvec::TrapMode,
 };
 
@@ -25,7 +24,6 @@ pub fn init() {
 #[no_mangle]
 pub extern "C" fn trap_handler(context: &mut TrapContext) -> &mut TrapContext {
     let scause = scause::read();
-    let _stval = stval::read();
 
     match scause.cause() {
         scause::Trap::Exception(Exception::UserEnvCall) => {
