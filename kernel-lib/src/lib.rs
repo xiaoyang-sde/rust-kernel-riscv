@@ -26,8 +26,7 @@ fn main() -> i32 {
     panic!("failed to find the `main` function");
 }
 
-/// The `.bss` section in an object file holds uninitialized data.
-/// The kernel initializes the data with zeros.
+/// Initialize the `.bss` section with zeros.
 fn clear_bss() {
     // The `bss_start` and `bss_end` symbols are declared in the `src/linker.ld`,
     // which represent the start address and the end address of the `.bss` section.
