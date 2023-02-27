@@ -1,3 +1,6 @@
+//! The `shared_ref` module provides a `SharedRef` struct,
+//! which is a wrapper around a `RefCell` that can be shared between threads.
+
 use core::cell::{RefCell, RefMut};
 
 /// The `SharedRef` struct is a wrapper of the `RefCell`.

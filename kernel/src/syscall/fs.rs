@@ -1,8 +1,11 @@
+//! The `fs` module provides system calls to interact with the file system.
+
 use crate::print;
 use core::{slice, str};
 
 const STDOUT: usize = 1;
 
+/// Write the contents of a buffer to a file descriptor.
 pub fn sys_write(fd: usize, buffer: *const u8, length: usize) -> isize {
     match fd {
         STDOUT => {

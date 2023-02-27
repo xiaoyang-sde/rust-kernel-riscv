@@ -1,4 +1,4 @@
-use crate::trap::context::TrapContext;
+use crate::trap::TrapContext;
 use core::mem;
 
 const KERNEL_STACK_SIZE: usize = 4096 * 2;
@@ -8,11 +8,14 @@ pub struct KernelStack {
     stack: [u8; KERNEL_STACK_SIZE],
 }
 
+/// The `KernelStack` struct represents the kernel stack.
 impl KernelStack {
     fn get_stack_pointer(&self) -> usize {
         self.stack.as_ptr() as usize + KERNEL_STACK_SIZE
     }
 
+    /// Push a [TrapContext] to the kernel stack
+    /// and return a mutable reference to the [TrapContext].
     pub unsafe fn push_context(&self, context: TrapContext) -> &'static mut TrapContext {
         let context_size = mem::size_of::<TrapContext>();
         let context_pointer = (self.get_stack_pointer() - context_size) as *mut TrapContext;
@@ -27,12 +30,14 @@ pub static KERNEL_STACK: KernelStack = KernelStack {
 
 const USER_STACK_SIZE: usize = 4096 * 2;
 
+/// The `UserStack` struct represents the user stack.
 #[repr(align(4096))]
 pub struct UserStack {
     stack: [u8; USER_STACK_SIZE],
 }
 
 impl UserStack {
+    /// Return a pointer to the top of the stack.
     pub fn get_stack_pointer(&self) -> usize {
         self.stack.as_ptr() as usize + USER_STACK_SIZE
     }

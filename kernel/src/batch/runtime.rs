@@ -5,8 +5,8 @@ const BIN_SIZE_LIMIT: usize = 0x20000;
 use crate::{
     batch::stack::{KERNEL_STACK, USER_STACK},
     sbi,
-    sync::shared_ref::SharedRef,
-    trap::context::TrapContext,
+    sync::SharedRef,
+    trap::TrapContext,
 };
 use core::{arch::asm, slice};
 use lazy_static::lazy_static;
@@ -101,5 +101,5 @@ pub fn load_next_bin() -> ! {
         let context = TrapContext::init_context(BIN_BASE_ADDRESS, USER_STACK.get_stack_pointer());
         _restore(KERNEL_STACK.push_context(context) as *const _ as usize)
     }
-    panic!("unreachable code in batch::runtime::load_next_bin");
+    panic!("unreachable code in batch::load_next_bin");
 }

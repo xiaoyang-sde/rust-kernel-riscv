@@ -1,3 +1,5 @@
+//! The `logging` module implements the [log::Log] trait.
+
 use crate::println;
 use log::{self, Level, LevelFilter, Metadata, Record};
 
@@ -31,6 +33,8 @@ impl log::Log for KernelLogger {
     fn flush(&self) {}
 }
 
+/// Initialize the kernel logger with the specified log level,
+/// or defaults to LevelFilter::Info
 pub fn init() {
     static LOGGER: KernelLogger = KernelLogger;
     log::set_logger(&LOGGER).unwrap();

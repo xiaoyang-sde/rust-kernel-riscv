@@ -24,8 +24,8 @@ pub fn rust_main() -> ! {
 
     info!("rust-kernel has booted");
     trap::init();
-    batch::runtime::init();
-    batch::runtime::load_next_bin();
+    batch::init();
+    batch::load_next_bin();
 }
 
 /// The `.bss` section in an object file holds uninitialized data.
