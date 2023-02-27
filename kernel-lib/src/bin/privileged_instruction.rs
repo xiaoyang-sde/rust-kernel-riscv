@@ -1,14 +1,15 @@
 #![no_std]
 #![no_main]
 
-#[macro_use]
 extern crate kernel_lib;
 
 use core::arch::asm;
 
+use log::warn;
+
 #[no_mangle]
 fn main() -> i32 {
-    println!("execute privileged instruction in U Mode");
+    warn!("attempt to execute privileged instruction");
     unsafe {
         asm!("sret");
     }

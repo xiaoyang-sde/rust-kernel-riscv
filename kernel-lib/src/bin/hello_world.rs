@@ -1,11 +1,12 @@
 #![no_std]
 #![no_main]
 
-#[macro_use]
+use log::info;
+
 extern crate kernel_lib;
 
 #[no_mangle]
 fn main() -> i32 {
-    println!("hello, world!");
+    info!("hello, world!");
     0
 }

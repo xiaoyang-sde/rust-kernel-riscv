@@ -23,7 +23,7 @@ impl log::Log for KernelLogger {
             Level::Trace => 90,
         };
         println!(
-            "\u{1B}[{}m[S][{}] {}\u{1B}[0m",
+            "\u{1B}[{}m[U][{}] {}\u{1B}[0m",
             color,
             record.level(),
             record.args()

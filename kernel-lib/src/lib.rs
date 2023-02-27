@@ -5,6 +5,7 @@
 
 pub mod console;
 mod lang_items;
+mod logging;
 mod syscall;
 
 use syscall::{sys_exit, sys_write};
@@ -13,6 +14,8 @@ use syscall::{sys_exit, sys_write};
 #[link_section = ".text.init"]
 pub extern "C" fn _start() -> ! {
     clear_bss();
+    logging::init();
+
     exit(main());
     panic!("failed to invoke `exit`")
 }
