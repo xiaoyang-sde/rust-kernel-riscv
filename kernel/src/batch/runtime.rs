@@ -50,6 +50,7 @@ struct BatchRuntime {
 
 impl BatchRuntime {
     pub fn print_bin_address(&self) {
+        info!("{} binaries have been loaded", self.bin_address_size);
         for i in 0..self.bin_address_size {
             let (bin_address_start, bin_address_end) = self.bin_address[i];
             info!(
@@ -61,7 +62,7 @@ impl BatchRuntime {
 
     pub fn load_next_bin(&mut self) {
         if self.next_bin == self.bin_address_size {
-            info!("all binaries are loaded");
+            info!("{} binaries have been executed", self.bin_address_size);
             sbi::shutdown();
         }
 

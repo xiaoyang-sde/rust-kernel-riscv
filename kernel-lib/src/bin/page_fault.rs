@@ -3,15 +3,15 @@
 
 extern crate kernel_lib;
 
-use core::arch::asm;
+use core::ptr::null_mut;
 
 use log::warn;
 
 #[no_mangle]
 fn main() -> i32 {
-    warn!("attempt to execute a privileged instruction");
+    warn!("attempt to write to an invalid location");
     unsafe {
-        asm!("sret");
+        null_mut::<u8>().write_volatile(0);
     }
     0
 }

@@ -8,3 +8,7 @@ build:
 	rust-objcopy \
         --strip-all target/riscv64gc-unknown-none-elf/debug/privileged_instruction \
         -O binary target/riscv64gc-unknown-none-elf/debug/privileged_instruction.bin
+	rust-objcopy \
+        --strip-all target/riscv64gc-unknown-none-elf/debug/page_fault \
+        -O binary target/riscv64gc-unknown-none-elf/debug/page_fault.bin
+
