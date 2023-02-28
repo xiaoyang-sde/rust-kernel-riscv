@@ -17,11 +17,12 @@ pub fn sys_write(fd: usize, buffer: *const u8, length: usize) -> isize {
                 length as isize
             }
             _ => {
-                panic!("the fd {} is not supported in 'sys_write'", fd);
+                error!("the file descriptor {} is not supported in 'sys_write'", fd);
+                -1
             }
         }
     } else {
-        error!("the buffer {:#x} is invalid", buffer as usize);
-        1
+        error!("the buffer at {:#x} is invalid", buffer as usize);
+        -1
     }
 }
