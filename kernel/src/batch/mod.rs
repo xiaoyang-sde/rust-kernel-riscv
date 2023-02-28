@@ -4,4 +4,4 @@
 mod runtime;
 mod stack;
 
-pub use runtime::{init, load_next_bin};
+pub use runtime::{init, is_valid_pointer, load_next_bin};

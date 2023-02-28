@@ -34,7 +34,7 @@ lazy_static! {
             }
 
             BatchRuntime {
-                next_bin: 0,
+                bin_state: None,
                 bin_address,
                 bin_address_size,
             }
@@ -43,7 +43,7 @@ lazy_static! {
 }
 
 struct BatchRuntime {
-    next_bin: usize,
+    bin_state: Option<usize>,
     bin_address: [(usize, usize); MAX_BIN_NUM],
     bin_address_size: usize,
 }
@@ -60,16 +60,32 @@ impl BatchRuntime {
         }
     }
 
+    pub fn is_valid_pointer(&self, pointer: *const u8, length: usize) -> bool {
+        if let Some(bin_state) = self.bin_state {
+            let (bin_address_start, bin_address_end) = self.bin_address[bin_state];
+            let lower_bound = BIN_BASE_ADDRESS;
+            let upper_bound = lower_bound + bin_address_end - bin_address_start;
+            lower_bound <= (pointer as usize) && (pointer as usize) + length <= upper_bound
+        } else {
+            false
+        }
+    }
+
     pub fn load_next_bin(&mut self) {
-        if self.next_bin == self.bin_address_size {
+        let next_bin = match self.bin_state {
+            Some(bin_state) => bin_state + 1,
+            None => 0,
+        };
+
+        if next_bin == self.bin_address_size {
             info!("{} binaries have been executed", self.bin_address_size);
             sbi::shutdown();
         }
 
         unsafe {
-            self.load_bin(self.next_bin);
+            self.load_bin(next_bin);
         }
-        self.next_bin += 1;
+        self.bin_state = Some(next_bin);
     }
 
     unsafe fn load_bin(&self, bin_id: usize) {
@@ -103,4 +119,9 @@ pub fn load_next_bin() -> ! {
         _restore(KERNEL_STACK.push_context(context) as *const _ as usize)
     }
     panic!("unreachable code in batch::load_next_bin");
+}
+
+pub fn is_valid_pointer(pointer: *const u8, length: usize) -> bool {
+    let batch_runtime = BATCH_RUNTIME.borrow_mut();
+    batch_runtime.is_valid_pointer(pointer, length) || USER_STACK.is_valid_pointer(pointer, length)
 }
