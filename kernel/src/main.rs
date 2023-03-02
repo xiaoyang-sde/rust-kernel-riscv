@@ -24,8 +24,8 @@ pub fn rust_main() -> ! {
 
     info!("rust-kernel has booted");
     trap::init();
-    batch::init();
-    batch::load_next_bin();
+    batch::load_bin();
+    batch::execute_next_bin();
 }
 
 /// Initialize the `.bss` section with zeros.

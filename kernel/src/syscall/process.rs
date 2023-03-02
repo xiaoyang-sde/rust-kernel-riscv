@@ -7,5 +7,5 @@ use crate::batch;
 /// Exit the current process with an exit code.
 pub fn sys_exit(exit_code: i32) -> ! {
     info!("exited with {}", exit_code);
-    batch::load_next_bin();
+    batch::execute_next_bin();
 }

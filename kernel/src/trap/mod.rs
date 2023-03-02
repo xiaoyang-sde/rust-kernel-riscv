@@ -52,11 +52,11 @@ pub extern "C" fn trap_handler(context: &mut TrapContext) -> &mut TrapContext {
         scause::Trap::Exception(Exception::StoreFault)
         | scause::Trap::Exception(Exception::StorePageFault) => {
             error!("page fault");
-            batch::load_next_bin();
+            batch::execute_next_bin();
         }
         scause::Trap::Exception(Exception::IllegalInstruction) => {
             error!("illegal instruction");
-            batch::load_next_bin();
+            batch::execute_next_bin();
         }
         _ => {
             panic!("unsupported trap {:?}", scause.cause())

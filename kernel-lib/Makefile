@@ -1,7 +1,7 @@
 .PHONY: build
 
 build:
-	cargo build
+	./build
 	rust-objcopy \
         --strip-all target/riscv64gc-unknown-none-elf/debug/hello_world \
         -O binary target/riscv64gc-unknown-none-elf/debug/hello_world.bin
@@ -11,4 +11,3 @@ build:
 	rust-objcopy \
         --strip-all target/riscv64gc-unknown-none-elf/debug/page_fault \
         -O binary target/riscv64gc-unknown-none-elf/debug/page_fault.bin
-

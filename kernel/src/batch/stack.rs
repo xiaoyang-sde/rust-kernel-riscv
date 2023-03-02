@@ -41,13 +41,6 @@ impl UserStack {
     pub fn get_stack_pointer(&self) -> usize {
         self.stack.as_ptr() as usize + USER_STACK_SIZE
     }
-
-    /// Check if a pointer is on the user stack
-    pub fn is_valid_pointer(&self, pointer: *const u8, length: usize) -> bool {
-        let lower_bound = self.stack.as_ptr() as usize;
-        let upper_bound = lower_bound + USER_STACK_SIZE;
-        lower_bound <= (pointer as usize) && (pointer as usize) + length <= upper_bound
-    }
 }
 
 pub static USER_STACK: UserStack = UserStack {
