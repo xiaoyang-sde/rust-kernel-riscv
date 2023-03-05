@@ -1,9 +1,9 @@
     .align 3
     .section .data
-    .global _bin_address_size
+    .global _bin_count
     .global _bin_address
 
-_bin_address_size:
+_bin_count:
     .quad 3
 
 _bin_address:

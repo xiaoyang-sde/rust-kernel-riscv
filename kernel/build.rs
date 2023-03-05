@@ -24,10 +24,10 @@ fn insert_bin_data() -> Result<()> {
         linkage_file,
         r#"    .align 3
     .section .data
-    .global _bin_address_size
+    .global _bin_count
     .global _bin_address
 
-_bin_address_size:
+_bin_count:
     .quad {}
 
 _bin_address:"#,

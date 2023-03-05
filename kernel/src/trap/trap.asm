@@ -49,9 +49,6 @@ _trap:
   call trap_handler
 
 _restore:
-  # Restore the stack pointer from the first argument
-  mv sp, a0
-
   # Restore the value of sstatus from the stack
   ld t0, 32 * 8(sp)
   csrw sstatus, t0

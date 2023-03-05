@@ -1,101 +1,124 @@
-const MAX_BIN_NUM: usize = 42;
-const BIN_BASE_ADDRESS: usize = 0x80400000;
-const BIN_SIZE_LIMIT: usize = 0x20000;
-
 use crate::{
-    task::stack::{KERNEL_STACK, USER_STACK},
+    file::{get_bin_count, init_bin_context},
     sbi,
     sync::SharedRef,
-    trap::TrapContext,
+    task::{TaskContext, TaskControlBlock, TaskStatus},
 };
-use core::{arch::asm, slice};
 use lazy_static::lazy_static;
-use log::info;
+
+const MAX_BIN_NUM: usize = 42;
 
 extern "C" {
-    fn _bin_address_size();
-    fn _bin_address();
-    fn _restore(context: usize);
+    fn _restore();
+    fn _switch(task_context: *mut TaskContext, next_task_context: *const TaskContext);
+}
+
+struct TaskRuntimeState {
+    task_index: Option<usize>,
+    task_list: [TaskControlBlock; MAX_BIN_NUM],
+}
+
+pub struct TaskRuntime {
+    bin_count: usize,
+    state: SharedRef<TaskRuntimeState>,
+}
+
+impl TaskRuntime {
+    fn run_init_task(&self) -> ! {
+        let mut state = self.state.borrow_mut();
+
+        let init_task = &mut state.task_list[0];
+        init_task.task_status = TaskStatus::Running;
+        let next_task_context = &init_task.task_context as *const TaskContext;
+
+        state.task_index = Some(0);
+        drop(state);
+
+        let void_task_context = &mut TaskContext::default() as *mut TaskContext;
+        unsafe {
+            _switch(void_task_context, next_task_context);
+        }
+        panic!("unreachable code in TaskRuntime::run_init_task")
+    }
+
+    fn set_task_status(&self, task_status: TaskStatus) {
+        let mut state = self.state.borrow_mut();
+        if let Some(task_index) = state.task_index {
+            state.task_list[task_index].task_status = task_status;
+        }
+    }
+
+    fn find_idle_task(&self) -> Option<usize> {
+        let state = self.state.borrow_mut();
+        if let Some(task_index) = state.task_index {
+            (task_index + 1..task_index + self.bin_count + 1)
+                .map(|task_index| task_index % self.bin_count)
+                .find(|index| state.task_list[*index].task_status == TaskStatus::Idle)
+        } else {
+            None
+        }
+    }
+
+    fn run_idle_task(&self) {
+        let mut state = self.state.borrow_mut();
+        if let Some(task_index) = state.task_index {
+            if let Some(next_task_index) = self.find_idle_task() {
+                let task = &mut state.task_list[task_index];
+                task.task_status = TaskStatus::Idle;
+                let task_context = &mut task.task_context as *mut TaskContext;
+
+                let next_task = &mut state.task_list[next_task_index];
+                next_task.task_status = TaskStatus::Running;
+                let next_task_context = &next_task.task_context as *const TaskContext;
+
+                state.task_index = Some(next_task_index);
+                drop(state);
+
+                unsafe {
+                    _switch(task_context, next_task_context);
+                }
+            } else {
+                sbi::shutdown();
+            }
+        }
+    }
 }
 
 lazy_static! {
-    static ref BIN_RUNTIME: SharedRef<BinRuntime> = unsafe {
-        let bin_address_size_pointer = _bin_address_size as *const usize;
-        let bin_address_size = bin_address_size_pointer.read_volatile();
-        SharedRef::new({
-            BinRuntime {
-                bin_address_size,
-                bin_state: None,
-            }
-        })
+    pub static ref TASK_RUNTIME: TaskRuntime = unsafe {
+        let bin_count = get_bin_count();
+        let mut task_list = [TaskControlBlock::default(); MAX_BIN_NUM];
+        for (task_index, task) in task_list.iter_mut().enumerate().take(bin_count) {
+            task.task_context = TaskContext {
+                ra: _restore as usize,
+                sp: init_bin_context(task_index),
+                s: [0; 12],
+            };
+            task.task_status = TaskStatus::Idle;
+        }
+
+        TaskRuntime {
+            bin_count,
+            state: SharedRef::new({
+                TaskRuntimeState {
+                    task_index: None,
+                    task_list,
+                }
+            }),
+        }
     };
 }
 
-struct BinRuntime {
-    bin_address_size: usize,
-    bin_state: Option<usize>,
+pub fn run_init_task() {
+    TASK_RUNTIME.run_init_task();
 }
 
-impl BinRuntime {
-    pub fn execute_next_bin(&mut self) -> Result<usize, ()> {
-        let next_bin = match self.bin_state {
-            Some(bin_state) => bin_state + 1,
-            None => 0,
-        };
-
-        if next_bin == self.bin_address_size {
-            Err(())
-        } else {
-            self.bin_state = Some(next_bin);
-            Ok(BIN_BASE_ADDRESS + next_bin * BIN_SIZE_LIMIT)
-        }
-    }
+pub fn suspend_task() {
+    TASK_RUNTIME.set_task_status(TaskStatus::Idle);
+    TASK_RUNTIME.run_idle_task();
 }
 
-pub fn load_bin() {
-    let bin_address_size_pointer = _bin_address_size as *const usize;
-    let bin_address_pointer = _bin_address as *const usize;
-
-    unsafe {
-        asm!("fence.i");
-        let bin_address_size = bin_address_size_pointer.read_volatile();
-        for bin_index in 0..bin_address_size {
-            let bin_address_start = bin_address_pointer.add(bin_index * 2).read_volatile();
-            let bin_address_end = bin_address_pointer.add(bin_index * 2 + 1).read_volatile();
-            let bin_image = slice::from_raw_parts(
-                bin_address_start as *const u8,
-                bin_address_end - bin_address_start,
-            );
-
-            let bin_text_address = BIN_BASE_ADDRESS + bin_index * BIN_SIZE_LIMIT;
-            slice::from_raw_parts_mut(bin_text_address as *mut u8, BIN_SIZE_LIMIT).fill(0);
-
-            let bin_text_segment =
-                slice::from_raw_parts_mut(bin_text_address as *mut u8, bin_image.len());
-            bin_text_segment.clone_from_slice(bin_image);
-        }
-
-        let mut bin_address: [(usize, usize); MAX_BIN_NUM] = [(0, 0); MAX_BIN_NUM];
-        for (i, bin) in bin_address.iter_mut().enumerate().take(bin_address_size) {
-            *bin = (
-                bin_address_pointer.add(i * 2).read_volatile(),
-                bin_address_pointer.add(i * 2 + 1).read_volatile(),
-            );
-        }
-    }
-}
-
-pub fn execute_next_bin() -> ! {
-    let mut bin_runtime = BIN_RUNTIME.borrow_mut();
-    let bin_text_address = bin_runtime.execute_next_bin().unwrap_or_else(|_| {
-        info!("all binaries have been executed");
-        sbi::shutdown();
-    });
-    drop(bin_runtime);
-
-    unsafe {
-        let context = TrapContext::init_context(bin_text_address, USER_STACK.get_stack_pointer());
-        _restore(KERNEL_STACK.push_context(context) as *const _ as usize)
-    }
-    panic!("unreachable code in batch::load_next_bin");
+pub fn exit_task() {
+    TASK_RUNTIME.set_task_status(TaskStatus::Stopped);
+    TASK_RUNTIME.run_idle_task();
 }

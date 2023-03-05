@@ -1,9 +1,11 @@
-use crate::trap::TrapContext;
+use crate::{
+    constant::{KERNEL_STACK_SIZE, MAX_BIN_NUM, USER_STACK_SIZE},
+    trap::TrapContext,
+};
 use core::mem;
 
-const KERNEL_STACK_SIZE: usize = 4096 * 2;
-
 #[repr(align(4096))]
+#[derive(Copy, Clone)]
 pub struct KernelStack {
     stack: [u8; KERNEL_STACK_SIZE],
 }
@@ -16,22 +18,23 @@ impl KernelStack {
 
     /// Push a [TrapContext] to the kernel stack
     /// and return a mutable reference to the [TrapContext].
-    pub unsafe fn push_context(&self, context: TrapContext) -> &'static mut TrapContext {
+    pub fn push_context(&self, context: TrapContext) -> *mut TrapContext {
         let context_size = mem::size_of::<TrapContext>();
         let context_pointer = (self.get_stack_pointer() - context_size) as *mut TrapContext;
-        *context_pointer = context;
-        context_pointer.as_mut().unwrap()
+        unsafe {
+            *context_pointer = context;
+        }
+        context_pointer
     }
 }
 
-pub static KERNEL_STACK: KernelStack = KernelStack {
+pub static KERNEL_STACK: [KernelStack; MAX_BIN_NUM] = [KernelStack {
     stack: [0; KERNEL_STACK_SIZE],
-};
-
-const USER_STACK_SIZE: usize = 4096 * 2;
+}; MAX_BIN_NUM];
 
 /// The `UserStack` struct represents the user stack.
 #[repr(align(4096))]
+#[derive(Copy, Clone)]
 pub struct UserStack {
     stack: [u8; USER_STACK_SIZE],
 }
@@ -43,6 +46,6 @@ impl UserStack {
     }
 }
 
-pub static USER_STACK: UserStack = UserStack {
+pub static USER_STACK: [UserStack; MAX_BIN_NUM] = [UserStack {
     stack: [0; USER_STACK_SIZE],
-};
+}; MAX_BIN_NUM];

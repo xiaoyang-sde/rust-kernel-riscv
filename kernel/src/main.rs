@@ -2,13 +2,15 @@
 #![no_main]
 #![feature(panic_info_message)]
 
-mod task;
 mod console;
+mod constant;
+mod file;
 mod lang_items;
 mod logging;
 mod sbi;
 mod sync;
 mod syscall;
+mod task;
 mod trap;
 
 use core::arch::global_asm;
@@ -24,8 +26,9 @@ pub fn rust_main() -> ! {
 
     info!("rust-kernel has booted");
     trap::init();
-    task::load_bin();
-    task::execute_next_bin();
+    file::load_bin();
+    task::run_init_task();
+    panic!("unreachable code in main")
 }
 
 /// Initialize the `.bss` section with zeros.

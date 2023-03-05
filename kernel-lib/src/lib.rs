@@ -8,7 +8,7 @@ mod lang_items;
 mod logging;
 mod syscall;
 
-use syscall::{sys_exit, sys_write};
+use syscall::{sys_exit, sys_sched_yield, sys_write};
 
 #[no_mangle]
 #[link_section = ".text.init"]
@@ -47,4 +47,8 @@ pub fn write(fd: usize, buffer: &[u8]) -> isize {
 
 pub fn exit(exit_code: i32) -> isize {
     sys_exit(exit_code)
+}
+
+pub fn sched_yield() -> isize {
+    sys_sched_yield()
 }
