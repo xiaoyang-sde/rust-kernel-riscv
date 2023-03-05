@@ -10,6 +10,7 @@ use core::arch::asm;
 
 const CONSOLE_PUTCHAR_EXTENSION: usize = 0x01;
 const SYSTEM_RESET_EXTENSION: usize = 0x53525354;
+const TIMER_EXTENSION: usize = 0x54494D45;
 
 #[inline]
 fn sbi_call(extension: usize, function: usize, arg0: usize, arg1: usize) -> (isize, isize) {
@@ -24,6 +25,11 @@ fn sbi_call(extension: usize, function: usize, arg0: usize, arg1: usize) -> (isi
         )
     }
     (error, value)
+}
+
+#[inline]
+pub fn set_timer(stime_value: usize) {
+    sbi_call(TIMER_EXTENSION, 0, stime_value, 0);
 }
 
 /// Write data present in `char` to debug console.

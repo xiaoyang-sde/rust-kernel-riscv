@@ -11,6 +11,7 @@ mod sbi;
 mod sync;
 mod syscall;
 mod task;
+mod timer;
 mod trap;
 
 use core::arch::global_asm;
@@ -27,6 +28,10 @@ pub fn rust_main() -> ! {
     info!("rust-kernel has booted");
     trap::init();
     file::load_bin();
+
+    timer::enable_timer_interrupt();
+    timer::set_trigger();
+
     task::run_init_task();
     panic!("unreachable code in main")
 }

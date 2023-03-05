@@ -4,13 +4,12 @@
 //! [RISC-V Supervisor-Level ISA Documentation](https://five-embeddev.com/riscv-isa-manual/latest/supervisor.html).
 
 pub use self::context::TrapContext;
-use crate::{syscall, task};
+use crate::{syscall, task, timer};
 use core::arch::global_asm;
 use log::error;
 use riscv::register::{
-    scause::{self, Exception},
-    stvec,
-    stvec::TrapMode,
+    scause::{self, Exception, Interrupt},
+    stvec::{self, TrapMode},
 };
 
 mod context;
@@ -57,6 +56,10 @@ pub extern "C" fn trap_handler(context: &mut TrapContext) -> &mut TrapContext {
         scause::Trap::Exception(Exception::IllegalInstruction) => {
             error!("illegal instruction");
             task::exit_task();
+        }
+        scause::Trap::Interrupt(Interrupt::SupervisorTimer) => {
+            timer::set_trigger();
+            task::suspend_task();
         }
         _ => {
             panic!("unsupported trap {:?}", scause.cause())
