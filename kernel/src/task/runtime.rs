@@ -1,12 +1,11 @@
 use crate::{
+    constant::MAX_BIN_NUM,
     file::{get_bin_count, init_bin_context},
     sbi,
     sync::SharedRef,
     task::{TaskContext, TaskControlBlock, TaskStatus},
 };
 use lazy_static::lazy_static;
-
-const MAX_BIN_NUM: usize = 42;
 
 extern "C" {
     fn _restore();
@@ -60,11 +59,10 @@ impl TaskRuntime {
     }
 
     fn run_idle_task(&self) {
-        let mut state = self.state.borrow_mut();
-        if let Some(task_index) = state.task_index {
-            if let Some(next_task_index) = self.find_idle_task() {
+        if let Some(next_task_index) = self.find_idle_task() {
+            let mut state = self.state.borrow_mut();
+            if let Some(task_index) = state.task_index {
                 let task = &mut state.task_list[task_index];
-                task.task_status = TaskStatus::Idle;
                 let task_context = &mut task.task_context as *mut TaskContext;
 
                 let next_task = &mut state.task_list[next_task_index];
@@ -77,9 +75,9 @@ impl TaskRuntime {
                 unsafe {
                     _switch(task_context, next_task_context);
                 }
-            } else {
-                sbi::shutdown();
             }
+        } else {
+            sbi::shutdown();
         }
     }
 }
