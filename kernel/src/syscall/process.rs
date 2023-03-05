@@ -2,10 +2,10 @@
 
 use log::info;
 
-use crate::batch;
+use crate::task;
 
 /// Exit the current process with an exit code.
 pub fn sys_exit(exit_code: i32) -> ! {
     info!("exited with {}", exit_code);
-    batch::execute_next_bin();
+    task::execute_next_bin();
 }

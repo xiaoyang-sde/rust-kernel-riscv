@@ -2,7 +2,7 @@
 #![no_main]
 #![feature(panic_info_message)]
 
-mod batch;
+mod task;
 mod console;
 mod lang_items;
 mod logging;
@@ -24,8 +24,8 @@ pub fn rust_main() -> ! {
 
     info!("rust-kernel has booted");
     trap::init();
-    batch::load_bin();
-    batch::execute_next_bin();
+    task::load_bin();
+    task::execute_next_bin();
 }
 
 /// Initialize the `.bss` section with zeros.

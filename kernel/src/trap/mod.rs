@@ -4,7 +4,7 @@
 //! [RISC-V Supervisor-Level ISA Documentation](https://five-embeddev.com/riscv-isa-manual/latest/supervisor.html).
 
 pub use self::context::TrapContext;
-use crate::{batch, syscall};
+use crate::{task, syscall};
 use core::arch::global_asm;
 use log::error;
 use riscv::register::{
@@ -52,11 +52,11 @@ pub extern "C" fn trap_handler(context: &mut TrapContext) -> &mut TrapContext {
         scause::Trap::Exception(Exception::StoreFault)
         | scause::Trap::Exception(Exception::StorePageFault) => {
             error!("page fault");
-            batch::execute_next_bin();
+            task::execute_next_bin();
         }
         scause::Trap::Exception(Exception::IllegalInstruction) => {
             error!("illegal instruction");
-            batch::execute_next_bin();
+            task::execute_next_bin();
         }
         _ => {
             panic!("unsupported trap {:?}", scause.cause())

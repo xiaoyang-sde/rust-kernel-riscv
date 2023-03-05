@@ -3,7 +3,7 @@ const BIN_BASE_ADDRESS: usize = 0x80400000;
 const BIN_SIZE_LIMIT: usize = 0x20000;
 
 use crate::{
-    batch::stack::{KERNEL_STACK, USER_STACK},
+    task::stack::{KERNEL_STACK, USER_STACK},
     sbi,
     sync::SharedRef,
     trap::TrapContext,
