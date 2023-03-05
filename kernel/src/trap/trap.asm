@@ -34,7 +34,7 @@ _trap:
 
   # Save the sstatus register to the stack
   csrr t0, sstatus
-  sd t0, 32  8(sp)
+  sd t0, 32 * 8(sp)
 
   # Save the sepc register to the stack
   csrr t1, sepc
