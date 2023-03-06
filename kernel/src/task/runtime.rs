@@ -6,6 +6,9 @@ use crate::{
     task::{TaskContext, TaskControlBlock, TaskStatus},
 };
 use lazy_static::lazy_static;
+use core::arch::global_asm;
+
+global_asm!(include_str!("switch.asm"));
 
 extern "C" {
     fn _restore();

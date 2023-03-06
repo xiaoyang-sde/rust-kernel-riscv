@@ -1,7 +1,3 @@
-use core::arch::global_asm;
-
-global_asm!(include_str!("switch.asm"));
-
 #[repr(C)]
 #[derive(Default, Copy, Clone)]
 pub struct TaskContext {
