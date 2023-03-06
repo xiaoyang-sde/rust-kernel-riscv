@@ -4,7 +4,7 @@
     .global _bin_address
 
 _bin_count:
-    .quad 3
+    .quad 4
 
 _bin_address:
     .quad bin_0_start
@@ -13,6 +13,8 @@ _bin_address:
     .quad bin_1_end
     .quad bin_2_start
     .quad bin_2_end
+    .quad bin_3_start
+    .quad bin_3_end
 
     .section .data
     .global bin_0_start
@@ -34,3 +36,10 @@ bin_1_end:
 bin_2_start:
     .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/privileged_instruction.bin"
 bin_2_end:
+
+    .section .data
+    .global bin_3_start
+    .global bin_3_end
+bin_3_start:
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/sleep.bin"
+bin_3_end:

@@ -8,7 +8,7 @@ mod lang_items;
 mod logging;
 mod syscall;
 
-use syscall::{sys_exit, sys_sched_yield, sys_write, sys_get_time};
+use syscall::{sys_exit, sys_get_time, sys_sched_yield, sys_write};
 
 #[no_mangle]
 #[link_section = ".text.init"]

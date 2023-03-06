@@ -5,8 +5,8 @@ use crate::{
     sync::SharedRef,
     task::{TaskContext, TaskControlBlock, TaskStatus},
 };
-use lazy_static::lazy_static;
 use core::arch::global_asm;
+use lazy_static::lazy_static;
 
 global_asm!(include_str!("switch.asm"));
 
