@@ -8,7 +8,7 @@ mod lang_items;
 mod logging;
 mod syscall;
 
-use syscall::{sys_exit, sys_sched_yield, sys_write};
+use syscall::{sys_exit, sys_sched_yield, sys_write, sys_get_time};
 
 #[no_mangle]
 #[link_section = ".text.init"]
@@ -51,4 +51,8 @@ pub fn exit(exit_code: i32) -> isize {
 
 pub fn sched_yield() -> isize {
     sys_sched_yield()
+}
+
+pub fn get_time() -> isize {
+    sys_get_time()
 }
