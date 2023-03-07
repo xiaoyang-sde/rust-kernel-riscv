@@ -1,12 +1,17 @@
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
+#![feature(alloc_error_handler)]
 
+extern crate alloc;
+
+#[macro_use]
 mod console;
 mod constant;
 mod file;
 mod lang_items;
 mod logging;
+mod mem;
 mod sbi;
 mod sync;
 mod syscall;
@@ -26,6 +31,8 @@ pub fn rust_main() -> ! {
     logging::init();
 
     info!("rust-kernel has booted");
+    mem::init_heap();
+
     trap::init();
     file::load_bin();
 
