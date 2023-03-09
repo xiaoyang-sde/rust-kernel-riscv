@@ -1,6 +1,7 @@
 use core::slice;
 
 use crate::constant::{PAGE_SIZE, PAGE_SIZE_BIT};
+use crate::mem::page_table::PageTableEntry;
 
 const PHYSICAL_ADDRESS_SIZE: usize = 56;
 const FRAME_NUMBER_SIZE: usize = PHYSICAL_ADDRESS_SIZE - PAGE_SIZE_BIT;
@@ -73,6 +74,16 @@ impl FrameNumber {
         unsafe { slice::from_raw_parts_mut(physical_address.bits as *mut u8, 4096) }
     }
 
+    pub fn get_pte(&self) -> &'static [PageTableEntry] {
+        let physical_address: PhysicalAddress = (*self).into();
+        unsafe { slice::from_raw_parts(physical_address.bits as *const PageTableEntry, 512) }
+    }
+
+    pub fn get_pte_mut(&self) -> &'static mut [PageTableEntry] {
+        let physical_address: PhysicalAddress = (*self).into();
+        unsafe { slice::from_raw_parts_mut(physical_address.bits as *mut PageTableEntry, 512) }
+    }
+
     pub fn offset(&mut self, rhs: usize) -> Self {
         FrameNumber {
             bits: (self.bits + rhs) & ((1 << FRAME_NUMBER_SIZE) - 1),
@@ -123,6 +134,17 @@ impl From<VirtualAddress> for usize {
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PageNumber {
     pub bits: usize,
+}
+
+impl PageNumber {
+    pub fn get_index(&self) -> [usize; 3] {
+        let mask = (1 << 9) - 1;
+        [
+            (self.bits >> 18) & mask,
+            (self.bits >> 9) & mask,
+            self.bits & mask,
+        ]
+    }
 }
 
 impl From<usize> for PageNumber {
