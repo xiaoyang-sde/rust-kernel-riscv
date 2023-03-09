@@ -1,10 +1,12 @@
+use core::slice;
+
 use crate::constant::{PAGE_SIZE, PAGE_SIZE_BIT};
 
 const PHYSICAL_ADDRESS_SIZE: usize = 56;
-const PHYSICAL_PAGE_NUMBER_SIZE: usize = PHYSICAL_ADDRESS_SIZE - PAGE_SIZE_BIT;
+const FRAME_NUMBER_SIZE: usize = PHYSICAL_ADDRESS_SIZE - PAGE_SIZE_BIT;
 
 const VIRTUAL_ADDRESS_SIZE: usize = 39;
-const VIRTUAL_PAGE_NUMBER_SIZE: usize = VIRTUAL_ADDRESS_SIZE - PAGE_SIZE_BIT;
+const PAGE_NUMBER_SIZE: usize = VIRTUAL_ADDRESS_SIZE - PAGE_SIZE_BIT;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysicalAddress {
@@ -12,14 +14,14 @@ pub struct PhysicalAddress {
 }
 
 impl PhysicalAddress {
-    pub fn floor(&self) -> PhysicalPageNumber {
-        PhysicalPageNumber {
+    pub fn floor(&self) -> FrameNumber {
+        FrameNumber {
             bits: self.bits / PAGE_SIZE,
         }
     }
 
-    pub fn ceil(&self) -> PhysicalPageNumber {
-        PhysicalPageNumber {
+    pub fn ceil(&self) -> FrameNumber {
+        FrameNumber {
             bits: (self.bits + PAGE_SIZE - 1) / PAGE_SIZE,
         }
     }
@@ -47,8 +49,8 @@ impl From<PhysicalAddress> for usize {
     }
 }
 
-impl From<PhysicalPageNumber> for PhysicalAddress {
-    fn from(value: PhysicalPageNumber) -> Self {
+impl From<FrameNumber> for PhysicalAddress {
+    fn from(value: FrameNumber) -> Self {
         Self {
             bits: value.bits << PAGE_SIZE_BIT,
         }
@@ -56,25 +58,43 @@ impl From<PhysicalPageNumber> for PhysicalAddress {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct PhysicalPageNumber {
+pub struct FrameNumber {
     pub bits: usize,
 }
 
-impl From<usize> for PhysicalPageNumber {
-    fn from(value: usize) -> Self {
-        Self {
-            bits: value & ((1 << PHYSICAL_PAGE_NUMBER_SIZE) - 1),
+impl FrameNumber {
+    pub fn get_bytes(&self) -> &'static [u8] {
+        let physical_address: PhysicalAddress = (*self).into();
+        unsafe { slice::from_raw_parts(physical_address.bits as *const u8, 4096) }
+    }
+
+    pub fn get_bytes_mut(&self) -> &'static mut [u8] {
+        let physical_address: PhysicalAddress = (*self).into();
+        unsafe { slice::from_raw_parts_mut(physical_address.bits as *mut u8, 4096) }
+    }
+
+    pub fn offset(&mut self, rhs: usize) -> Self {
+        FrameNumber {
+            bits: (self.bits + rhs) & ((1 << FRAME_NUMBER_SIZE) - 1),
         }
     }
 }
 
-impl From<PhysicalPageNumber> for usize {
-    fn from(value: PhysicalPageNumber) -> Self {
+impl From<usize> for FrameNumber {
+    fn from(value: usize) -> Self {
+        Self {
+            bits: value & ((1 << FRAME_NUMBER_SIZE) - 1),
+        }
+    }
+}
+
+impl From<FrameNumber> for usize {
+    fn from(value: FrameNumber) -> Self {
         value.bits
     }
 }
 
-impl From<PhysicalAddress> for PhysicalPageNumber {
+impl From<PhysicalAddress> for FrameNumber {
     fn from(value: PhysicalAddress) -> Self {
         assert_eq!(value.page_offset(), 0);
         value.floor()
@@ -101,20 +121,20 @@ impl From<VirtualAddress> for usize {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct VirtualPageNumber {
+pub struct PageNumber {
     pub bits: usize,
 }
 
-impl From<usize> for VirtualPageNumber {
+impl From<usize> for PageNumber {
     fn from(value: usize) -> Self {
         Self {
-            bits: value & ((1 << VIRTUAL_PAGE_NUMBER_SIZE) - 1),
+            bits: value & ((1 << PAGE_NUMBER_SIZE) - 1),
         }
     }
 }
 
-impl From<VirtualPageNumber> for usize {
-    fn from(value: VirtualPageNumber) -> Self {
+impl From<PageNumber> for usize {
+    fn from(value: PageNumber) -> Self {
         value.bits
     }
 }

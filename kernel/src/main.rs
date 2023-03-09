@@ -32,6 +32,7 @@ pub fn rust_main() -> ! {
 
     info!("rust-kernel has booted");
     mem::init_heap();
+    mem::init_frame();
 
     trap::init();
     file::load_bin();
