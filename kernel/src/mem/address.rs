@@ -1,3 +1,5 @@
+//! The `address` module defines various structs for the page table.
+
 use core::slice;
 
 use crate::constant::{PAGE_SIZE, PAGE_SIZE_BIT};
@@ -64,21 +66,25 @@ pub struct FrameNumber {
 }
 
 impl FrameNumber {
+    /// Interpret the frame as a slice of `u8` and return a reference to the slice.
     pub fn get_bytes(&self) -> &'static [u8] {
         let physical_address: PhysicalAddress = (*self).into();
         unsafe { slice::from_raw_parts(physical_address.bits as *const u8, 4096) }
     }
 
+    /// Interpret the frame as a slice of `u8` and return a mutable reference to the slice.
     pub fn get_bytes_mut(&self) -> &'static mut [u8] {
         let physical_address: PhysicalAddress = (*self).into();
         unsafe { slice::from_raw_parts_mut(physical_address.bits as *mut u8, 4096) }
     }
 
+    /// Interpret the frame as a slice of [PageTableEntry] and return a reference to the slice.
     pub fn get_pte(&self) -> &'static [PageTableEntry] {
         let physical_address: PhysicalAddress = (*self).into();
         unsafe { slice::from_raw_parts(physical_address.bits as *const PageTableEntry, 512) }
     }
 
+    /// Interpret the frame as a slice of [PageTableEntry] and return a mutable reference to the slice.
     pub fn get_pte_mut(&self) -> &'static mut [PageTableEntry] {
         let physical_address: PhysicalAddress = (*self).into();
         unsafe { slice::from_raw_parts_mut(physical_address.bits as *mut PageTableEntry, 512) }
@@ -117,6 +123,28 @@ pub struct VirtualAddress {
     pub bits: usize,
 }
 
+impl VirtualAddress {
+    pub fn floor(&self) -> PageNumber {
+        PageNumber {
+            bits: self.bits / PAGE_SIZE,
+        }
+    }
+
+    pub fn ceil(&self) -> PageNumber {
+        PageNumber {
+            bits: (self.bits + PAGE_SIZE - 1) / PAGE_SIZE,
+        }
+    }
+
+    pub fn page_offset(&self) -> usize {
+        self.bits & (PAGE_SIZE - 1)
+    }
+
+    pub fn aligned(&self) -> bool {
+        self.page_offset() == 0
+    }
+}
+
 impl From<usize> for VirtualAddress {
     fn from(value: usize) -> Self {
         Self {
@@ -137,13 +165,19 @@ pub struct PageNumber {
 }
 
 impl PageNumber {
-    pub fn get_index(&self) -> [usize; 3] {
+    pub fn index(&self) -> [usize; 3] {
         let mask = (1 << 9) - 1;
         [
             (self.bits >> 18) & mask,
             (self.bits >> 9) & mask,
             self.bits & mask,
         ]
+    }
+
+    pub fn offset(&mut self, rhs: usize) -> Self {
+        PageNumber {
+            bits: (self.bits + rhs) & ((1 << PAGE_NUMBER_SIZE) - 1),
+        }
     }
 }
 
@@ -158,5 +192,56 @@ impl From<usize> for PageNumber {
 impl From<PageNumber> for usize {
     fn from(value: PageNumber) -> Self {
         value.bits
+    }
+}
+
+/// The `PageRange` struct represents a range of page numbers,
+/// with `start` and `end` field holding [PageNumber] values.
+pub struct PageRange {
+    pub start: PageNumber,
+    pub end: PageNumber,
+}
+
+impl PageRange {
+    pub fn new(start: PageNumber, end: PageNumber) -> Self {
+        Self { start, end }
+    }
+
+    pub fn iter(&self) -> PageRangeIterator {
+        PageRangeIterator::new(self.start, self.end)
+    }
+}
+
+impl IntoIterator for PageRange {
+    type Item = PageNumber;
+    type IntoIter = PageRangeIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        PageRangeIterator::new(self.start, self.end)
+    }
+}
+
+pub struct PageRangeIterator {
+    state: PageNumber,
+    end: PageNumber,
+}
+
+impl PageRangeIterator {
+    pub fn new(start: PageNumber, end: PageNumber) -> Self {
+        Self { state: start, end }
+    }
+}
+
+impl Iterator for PageRangeIterator {
+    type Item = PageNumber;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.state == self.end {
+            None
+        } else {
+            let result = self.state;
+            self.state = self.state.offset(1);
+            Some(result)
+        }
     }
 }

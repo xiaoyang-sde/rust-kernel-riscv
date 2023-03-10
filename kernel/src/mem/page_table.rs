@@ -1,13 +1,14 @@
+//! The `page_table` module defines a 3-level page table
+//! that follows the RISC-V Sv39 page table specification.
+//! The page table supports 512 GB of virtual-address space.
+
 #![macro_use]
 use alloc::vec;
 
 use alloc::vec::Vec;
 use bitflags::bitflags;
 
-use crate::mem::frame_alloc;
-use crate::mem::frame_allocator::FrameTracker;
-use crate::mem::FrameNumber;
-use crate::mem::PageNumber;
+use crate::mem::{allocate_frame, frame_allocator::FrameTracker, FrameNumber, PageNumber};
 
 bitflags! {
   pub struct PTEFlags: u8 {
@@ -68,36 +69,43 @@ pub struct PageTable {
 
 impl PageTable {
     pub fn new() -> Self {
-        let frame = frame_alloc().unwrap();
+        let frame = allocate_frame().unwrap();
         PageTable {
             root_frame_number: frame.frame_number,
             frame_list: vec![frame],
         }
     }
 
-    pub fn from_token(satp: usize) -> Self {
+    /// Create a [PageTable] where the `root_frame_number` points to
+    /// the framed in the `satp` register.
+    pub fn from_satp(satp: usize) -> Self {
         Self {
             root_frame_number: FrameNumber::from(satp & ((1 << 44) - 1)),
             frame_list: Vec::new(),
         }
     }
 
+    /// Map a [PageNumber] to a [FrameNumber]. Set the [PageTableEntry] with [PTEFlags].
     pub fn map(&mut self, page_number: PageNumber, frame_number: FrameNumber, flags: PTEFlags) {
         let pte = self.create_pte(page_number).unwrap();
         *pte = PageTableEntry::new(frame_number, flags | PTEFlags::V);
     }
 
+    /// Clear the [PageTableEntry] corresponding to the [PageNumber].
     pub fn unmap(&mut self, page_number: PageNumber) {
         let pte = self.find_pte(page_number).unwrap();
         *pte = PageTableEntry::default();
     }
 
+    /// Lookup the page table with a [PageNumber] and return a [PageTableEntry].
     pub fn translate(&self, page_number: PageNumber) -> Option<PageTableEntry> {
-        self.find_pte(page_number).map(|pte| pte.clone())
+        self.find_pte(page_number).map(|pte| *pte)
     }
 
+    /// Lookup the page table with a [PageNumber] and
+    /// return a mutable reference to a [PageTableEntry].
     fn find_pte(&self, page_number: PageNumber) -> Option<&mut PageTableEntry> {
-        let index = page_number.get_index();
+        let index = page_number.index();
         let mut frame_number = self.root_frame_number;
         for (i, pte_index) in index.iter().enumerate() {
             let pte = &mut frame_number.get_pte_mut()[*pte_index];
@@ -114,8 +122,11 @@ impl PageTable {
         None
     }
 
+    /// Lookup the page table with a [PageNumber] and
+    /// return a mutable reference to a [PageTableEntry].
+    /// Create a new [PageTableEntry] if not existed.
     fn create_pte(&mut self, page_number: PageNumber) -> Option<&mut PageTableEntry> {
-        let index = page_number.get_index();
+        let index = page_number.index();
         let mut frame_number = self.root_frame_number;
         for (i, pte_index) in index.iter().enumerate() {
             let pte = &mut frame_number.get_pte_mut()[*pte_index];
@@ -124,7 +135,7 @@ impl PageTable {
             }
 
             if !pte.is_valid() {
-                let frame = frame_alloc().unwrap();
+                let frame = allocate_frame().unwrap();
                 *pte = PageTableEntry::new(frame.frame_number, PTEFlags::V);
                 self.frame_list.push(frame);
             }

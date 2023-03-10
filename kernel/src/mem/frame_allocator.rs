@@ -1,3 +1,5 @@
+//! The `frame_allocator` module provides a frame allocator for the kernel.
+
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
 
@@ -5,6 +7,10 @@ use crate::constant::MEM_END;
 use crate::mem::{FrameNumber, PhysicalAddress};
 use crate::sync::SharedRef;
 
+/// The `FrameTracker` struct represents a frame in the physical memory.
+/// It contains the frame number and is responsible for zeroing out the
+/// frame when it is created.
+/// It deallocates the frame when it is dropped, which follows the RAII idiom.
 pub struct FrameTracker {
     pub frame_number: FrameNumber,
 }
@@ -21,14 +27,14 @@ impl FrameTracker {
 
 impl Drop for FrameTracker {
     fn drop(&mut self) {
-        frame_dealloc(self.frame_number)
+        deallocate_frame(self.frame_number)
     }
 }
 
 trait FrameAllocator {
     fn new() -> Self;
-    fn alloc(&mut self) -> Option<FrameNumber>;
-    fn dealloc(&mut self, frame_number: FrameNumber);
+    fn allocate(&mut self) -> Option<FrameNumber>;
+    fn deallocate(&mut self, frame_number: FrameNumber);
 }
 
 pub struct StackFrameAllocator {
@@ -53,7 +59,7 @@ impl FrameAllocator for StackFrameAllocator {
         }
     }
 
-    fn alloc(&mut self) -> Option<FrameNumber> {
+    fn allocate(&mut self) -> Option<FrameNumber> {
         if let Some(frame_number) = self.deallocated_page.pop() {
             Some(frame_number)
         } else if self.physical_page_start == self.physical_page_end {
@@ -65,7 +71,7 @@ impl FrameAllocator for StackFrameAllocator {
         }
     }
 
-    fn dealloc(&mut self, frame_number: FrameNumber) {
+    fn deallocate(&mut self, frame_number: FrameNumber) {
         if self.physical_page_start <= frame_number
             || self.deallocated_page.iter().any(|v| *v == frame_number)
         {
@@ -91,10 +97,15 @@ pub fn init_frame() {
     );
 }
 
-pub fn frame_alloc() -> Option<FrameTracker> {
-    FRAME_ALLOCATOR.borrow_mut().alloc().map(FrameTracker::new)
+/// Allocate a frame and return a [FrameTracker] to track the allocated frame when succeeded.
+pub fn allocate_frame() -> Option<FrameTracker> {
+    FRAME_ALLOCATOR
+        .borrow_mut()
+        .allocate()
+        .map(FrameTracker::new)
 }
 
-pub fn frame_dealloc(frame_number: FrameNumber) {
-    FRAME_ALLOCATOR.borrow_mut().dealloc(frame_number);
+/// Deallocate the frame with a specific [FrameNumber].
+pub fn deallocate_frame(frame_number: FrameNumber) {
+    FRAME_ALLOCATOR.borrow_mut().deallocate(frame_number);
 }
