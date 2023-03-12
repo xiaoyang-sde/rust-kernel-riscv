@@ -7,7 +7,7 @@ pub use self::context::TrapContext;
 use crate::{
     constant::{TRAMPOLINE, TRAP_CONTEXT},
     syscall,
-    task::{self, get_satp, get_trap_context},
+    task::{self, satp, trap_context},
     timer,
 };
 use core::arch::{asm, global_asm};
@@ -24,14 +24,15 @@ global_asm!(include_str!("trap.asm"));
 
 extern "C" {
     fn _trap();
+    fn _restore();
 }
 
 #[no_mangle]
 fn kernel_trap_handler() -> ! {
-    panic!("a trap from kernel!");
+    panic!("unsupported trap");
 }
 
-/// Initialize the `stvec` register to `Direct` mode
+/// Initializes the `stvec` register to `Direct` mode
 /// with the address of the [kernel_trap_handler] function.
 pub fn init() {
     unsafe {
@@ -39,26 +40,29 @@ pub fn init() {
     }
 }
 
-/// Handle traps (exceptions and interrupts) raised from the user mode.
+/// Handles traps (exceptions and interrupts) raised from the user mode.
 #[no_mangle]
 pub extern "C" fn trap_handler() -> ! {
     unsafe {
         stvec::write(kernel_trap_handler as usize, TrapMode::Direct);
     }
 
-    let context = get_trap_context();
+    let context = trap_context();
     let scause = scause::read();
     let stval = stval::read();
 
     match scause.cause() {
         scause::Trap::Exception(Exception::UserEnvCall) => {
-            context.sepc += 4;
-            context.register[10] = syscall::syscall(
-                context.register[17],
-                context.register[10],
-                context.register[11],
-                context.register[12],
-            ) as usize;
+            context.set_sepc(context.sepc() + 4);
+            context.set_register(
+                10,
+                syscall::syscall(
+                    context.register(17),
+                    context.register(10),
+                    context.register(11),
+                    context.register(12),
+                ) as usize,
+            );
         }
         scause::Trap::Exception(Exception::StoreFault)
         | scause::Trap::Exception(Exception::StorePageFault)
@@ -83,6 +87,7 @@ pub extern "C" fn trap_handler() -> ! {
             panic!("unsupported trap {:?}", scause.cause())
         }
     }
+
     trap_return();
 }
 
@@ -92,19 +97,14 @@ pub fn trap_return() -> ! {
         stvec::write(TRAMPOLINE, TrapMode::Direct);
     }
 
-    extern "C" {
-        fn _trap();
-        fn _restore();
-    }
-    let restore = _restore as usize - _trap as usize + TRAMPOLINE;
-
+    let restore_offset = _restore as usize - _trap as usize;
     unsafe {
         asm!(
             "fence.i",
             "jr {restore}",
-            restore = in(reg) restore,
+            restore = in(reg) TRAMPOLINE + restore_offset,
             in("a0") TRAP_CONTEXT,
-            in("a1") get_satp(),
+            in("a1") satp(),
             options(noreturn)
         );
     }

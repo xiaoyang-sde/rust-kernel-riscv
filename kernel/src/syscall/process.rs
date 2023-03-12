@@ -4,7 +4,7 @@ use log::info;
 
 use crate::task;
 
-/// Exit the current process with an exit code.
+/// Exits the current process with an exit code.
 pub fn sys_exit(exit_code: i32) -> ! {
     info!("exited with {}", exit_code);
     task::exit_task();

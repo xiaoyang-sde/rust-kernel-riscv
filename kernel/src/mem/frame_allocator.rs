@@ -3,25 +3,29 @@
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
 
-use crate::constant::MEM_END;
+use crate::constant::MEM_LIMIT;
 use crate::mem::{FrameNumber, PhysicalAddress};
 use crate::sync::SharedRef;
 
 /// The `FrameTracker` struct represents a frame in the physical memory.
-/// It contains the frame number and is responsible for zeroing out the
-/// frame when it is created.
+/// It contains the frame number and is responsible for zeroing out the frame when it is created.
 /// It deallocates the frame when it is dropped, which follows the RAII idiom.
 pub struct FrameTracker {
-    pub frame_number: FrameNumber,
+    frame_number: FrameNumber,
 }
 
 impl FrameTracker {
+    /// Initializes a frame with a specific [FrameNumber] and zeros out the frame.
     pub fn new(frame_number: FrameNumber) -> Self {
-        for byte in frame_number.get_bytes_mut() {
+        for byte in frame_number.as_bytes_mut() {
             *byte = 0;
         }
 
         Self { frame_number }
+    }
+
+    pub fn frame_number(&self) -> FrameNumber {
+        self.frame_number
     }
 }
 
@@ -53,8 +57,8 @@ impl StackFrameAllocator {
 impl FrameAllocator for StackFrameAllocator {
     fn new() -> Self {
         StackFrameAllocator {
-            frame_start: 0.into(),
-            frame_end: 0.into(),
+            frame_start: FrameNumber::from(0),
+            frame_end: FrameNumber::from(0),
             deallocated_page: Vec::new(),
         }
     }
@@ -66,15 +70,13 @@ impl FrameAllocator for StackFrameAllocator {
             None
         } else {
             let result = Some(self.frame_start);
-            self.frame_start = self.frame_start.offset(1);
+            self.frame_start += 1;
             result
         }
     }
 
     fn deallocate(&mut self, frame_number: FrameNumber) {
-        if self.frame_start <= frame_number
-            || self.deallocated_page.iter().any(|v| *v == frame_number)
-        {
+        if self.frame_start <= frame_number || self.deallocated_page.contains(&frame_number) {
             panic!("the frame {:#x} has not been allocated", frame_number.bits)
         }
         self.deallocated_page.push(frame_number);
@@ -86,6 +88,8 @@ lazy_static! {
         unsafe { SharedRef::new(StackFrameAllocator::new()) };
 }
 
+/// Initializes a frame allocator that manages the physical address from `kernel_end` to
+/// [MEM_LIMIT].
 pub fn init_frame() {
     extern "C" {
         fn kernel_end();
@@ -93,11 +97,11 @@ pub fn init_frame() {
 
     FRAME_ALLOCATOR.borrow_mut().init(
         PhysicalAddress::from(kernel_end as usize).ceil(),
-        PhysicalAddress::from(MEM_END).floor(),
+        PhysicalAddress::from(MEM_LIMIT).floor(),
     );
 }
 
-/// Allocate a frame and return a [FrameTracker] to track the allocated frame when succeeded.
+/// Allocates a frame and returns a [FrameTracker] to track the allocated frame when succeeded.
 pub fn allocate_frame() -> Option<FrameTracker> {
     FRAME_ALLOCATOR
         .borrow_mut()
@@ -105,7 +109,7 @@ pub fn allocate_frame() -> Option<FrameTracker> {
         .map(FrameTracker::new)
 }
 
-/// Deallocate the frame with a specific [FrameNumber].
+/// Deallocates the frame with a specific [FrameNumber].
 pub fn deallocate_frame(frame_number: FrameNumber) {
     FRAME_ALLOCATOR.borrow_mut().deallocate(frame_number);
 }

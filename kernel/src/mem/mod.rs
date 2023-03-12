@@ -5,7 +5,7 @@ mod page_table;
 mod segment;
 
 pub use address::{FrameNumber, PageNumber, PhysicalAddress, VirtualAddress};
-pub use frame_allocator::{allocate_frame, deallocate_frame};
+pub use frame_allocator::deallocate_frame;
 pub use page_table::translate_buffer;
 pub use segment::{MapPermission, PageSet, KERNEL_SPACE};
 

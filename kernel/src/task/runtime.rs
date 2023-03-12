@@ -30,8 +30,8 @@ impl TaskRuntime {
         let mut state = self.state.borrow_mut();
 
         let init_task = &mut state.task_list[0];
-        init_task.task_status = TaskStatus::Running;
-        let next_task_context = &init_task.task_context as *const TaskContext;
+        init_task.set_task_status(TaskStatus::Running);
+        let next_task_context = init_task.task_context_ptr();
 
         state.task_index = Some(0);
         drop(state);
@@ -46,7 +46,7 @@ impl TaskRuntime {
     fn set_task_status(&self, task_status: TaskStatus) {
         let mut state = self.state.borrow_mut();
         if let Some(task_index) = state.task_index {
-            state.task_list[task_index].task_status = task_status;
+            state.task_list[task_index].set_task_status(task_status);
         }
     }
 
@@ -55,7 +55,7 @@ impl TaskRuntime {
         if let Some(task_index) = state.task_index {
             (task_index + 1..task_index + self.bin_count + 1)
                 .map(|task_index| task_index % self.bin_count)
-                .find(|index| state.task_list[*index].task_status == TaskStatus::Idle)
+                .find(|index| state.task_list[*index].task_status() == TaskStatus::Idle)
         } else {
             None
         }
@@ -66,11 +66,11 @@ impl TaskRuntime {
             let mut state = self.state.borrow_mut();
             if let Some(task_index) = state.task_index {
                 let task = &mut state.task_list[task_index];
-                let task_context = &mut task.task_context as *mut TaskContext;
+                let task_context = task.task_context_ptr_mut();
 
                 let next_task = &mut state.task_list[next_task_index];
-                next_task.task_status = TaskStatus::Running;
-                let next_task_context = &next_task.task_context as *const TaskContext;
+                next_task.set_task_status(TaskStatus::Running);
+                let next_task_context = next_task.task_context_ptr();
 
                 state.task_index = Some(next_task_index);
                 drop(state);
@@ -84,16 +84,16 @@ impl TaskRuntime {
         }
     }
 
-    fn get_satp(&self) -> usize {
+    fn sapt(&self) -> usize {
         let state = self.state.borrow_mut();
         let task_index = state.task_index.unwrap();
-        state.task_list[task_index].get_satp()
+        state.task_list[task_index].satp()
     }
 
-    fn get_trap_context(&self) -> &mut TrapContext {
+    fn trap_context(&self) -> &mut TrapContext {
         let state = self.state.borrow_mut();
         let task_index = state.task_index.unwrap();
-        state.task_list[task_index].get_trap_context()
+        state.task_list[task_index].trap_context()
     }
 }
 
@@ -131,10 +131,10 @@ pub fn exit_task() {
     TASK_RUNTIME.run_idle_task();
 }
 
-pub fn get_satp() -> usize {
-    TASK_RUNTIME.get_satp()
+pub fn satp() -> usize {
+    TASK_RUNTIME.sapt()
 }
 
-pub fn get_trap_context() -> &'static mut TrapContext {
-    TASK_RUNTIME.get_trap_context()
+pub fn trap_context() -> &'static mut TrapContext {
+    TASK_RUNTIME.trap_context()
 }

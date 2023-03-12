@@ -9,19 +9,21 @@ use riscv::register::sstatus::{self, Sstatus};
 #[repr(C)]
 pub struct TrapContext {
     /// The values of all the general-purpose registers.
-    pub register: [usize; 32],
+    register: [usize; 32],
     /// The value of the `sstatus` register.
-    pub sstatus: Sstatus,
+    sstatus: Sstatus,
     /// The value of the `sepc` register.
-    pub sepc: usize,
-
-    pub trap_handler: usize,
-    pub kernel_satp: usize,
-    pub kernel_sp: usize,
+    sepc: usize,
+    /// The address of the `trap_handler` function.
+    trap_handler: usize,
+    /// The value of the `satp` register of the kernel.
+    kernel_satp: usize,
+    /// The value of the `sp` register of the kernel.
+    kernel_sp: usize,
 }
 
 impl TrapContext {
-    /// Initialize a new `TrapContext` with an initial `sepc` and stack pointer value.
+    /// Initializes a new `TrapContext` with an initial `sepc` and stack pointer value.
     pub fn init_context(
         sepc: usize,
         stack_pointer: usize,
@@ -38,8 +40,23 @@ impl TrapContext {
             kernel_sp,
         };
 
-        // Set the stack pointer value for the context
         context.register[2] = stack_pointer;
         context
+    }
+
+    pub fn sepc(&self) -> usize {
+        self.sepc
+    }
+
+    pub fn set_sepc(&mut self, sepc: usize) {
+        self.sepc = sepc;
+    }
+
+    pub fn register(&self, index: usize) -> usize {
+        self.register[index]
+    }
+
+    pub fn set_register(&mut self, index: usize, value: usize) {
+        self.register[index] = value;
     }
 }

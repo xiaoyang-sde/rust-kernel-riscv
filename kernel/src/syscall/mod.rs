@@ -9,7 +9,7 @@ const SYSCALL_EXIT: usize = 93;
 const SYSCALL_SCHED_YIELD: usize = 128;
 const SYSCALL_GET_TIME: usize = 169;
 
-/// Call a system call with the given arguments.
+/// Invokes a system call with the given arguments.
 pub fn syscall(syscall_id: usize, arg0: usize, arg1: usize, arg2: usize) -> isize {
     match syscall_id {
         SYSCALL_WRITE => fs::sys_write(arg0, arg1 as *const u8, arg2),
