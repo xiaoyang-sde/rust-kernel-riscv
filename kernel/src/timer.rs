@@ -1,4 +1,4 @@
-use riscv::register::{sie, sstatus, time};
+use riscv::register::{sie, time};
 
 use crate::{constant::CLOCK_FREQ, sbi};
 
@@ -15,6 +15,5 @@ pub fn set_trigger() {
 pub fn enable_timer_interrupt() {
     unsafe {
         sie::set_stimer();
-        sstatus::set_sie();
     }
 }

@@ -1,23 +1,23 @@
 use crate::{
-    constant::MAX_BIN_NUM,
-    file::{get_bin_count, init_bin_context},
+    file::{get_bin_count, get_bin_data},
     sbi,
     sync::SharedRef,
     task::{TaskContext, TaskControlBlock, TaskStatus},
+    trap::TrapContext,
 };
+use alloc::vec::Vec;
 use core::arch::global_asm;
 use lazy_static::lazy_static;
 
 global_asm!(include_str!("switch.asm"));
 
 extern "C" {
-    fn _restore();
     fn _switch(task_context: *mut TaskContext, next_task_context: *const TaskContext);
 }
 
 struct TaskRuntimeState {
     task_index: Option<usize>,
-    task_list: [TaskControlBlock; MAX_BIN_NUM],
+    task_list: Vec<TaskControlBlock>,
 }
 
 pub struct TaskRuntime {
@@ -83,19 +83,26 @@ impl TaskRuntime {
             sbi::shutdown();
         }
     }
+
+    fn get_satp(&self) -> usize {
+        let state = self.state.borrow_mut();
+        let task_index = state.task_index.unwrap();
+        state.task_list[task_index].get_satp()
+    }
+
+    fn get_trap_context(&self) -> &mut TrapContext {
+        let state = self.state.borrow_mut();
+        let task_index = state.task_index.unwrap();
+        state.task_list[task_index].get_trap_context()
+    }
 }
 
 lazy_static! {
     pub static ref TASK_RUNTIME: TaskRuntime = unsafe {
         let bin_count = get_bin_count();
-        let mut task_list = [TaskControlBlock::default(); MAX_BIN_NUM];
-        for (task_index, task) in task_list.iter_mut().enumerate().take(bin_count) {
-            task.task_context = TaskContext {
-                ra: _restore as usize,
-                sp: init_bin_context(task_index),
-                s: [0; 12],
-            };
-            task.task_status = TaskStatus::Idle;
+        let mut task_list = Vec::new();
+        for i in 0..bin_count {
+            task_list.push(TaskControlBlock::new(get_bin_data(i), i));
         }
 
         TaskRuntime {
@@ -122,4 +129,12 @@ pub fn suspend_task() {
 pub fn exit_task() {
     TASK_RUNTIME.set_task_status(TaskStatus::Stopped);
     TASK_RUNTIME.run_idle_task();
+}
+
+pub fn get_satp() -> usize {
+    TASK_RUNTIME.get_satp()
+}
+
+pub fn get_trap_context() -> &'static mut TrapContext {
+    TASK_RUNTIME.get_trap_context()
 }

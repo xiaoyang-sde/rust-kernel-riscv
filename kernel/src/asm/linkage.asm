@@ -19,27 +19,31 @@ _bin_address:
     .section .data
     .global bin_0_start
     .global bin_0_end
+    .align 3
 bin_0_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/hello_world.bin"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/hello_world"
 bin_0_end:
 
     .section .data
     .global bin_1_start
     .global bin_1_end
+    .align 3
 bin_1_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/page_fault.bin"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/page_fault"
 bin_1_end:
 
     .section .data
     .global bin_2_start
     .global bin_2_end
+    .align 3
 bin_2_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/privileged_instruction.bin"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/privileged_instruction"
 bin_2_end:
 
     .section .data
     .global bin_3_start
     .global bin_3_end
+    .align 3
 bin_3_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/sleep.bin"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/sleep"
 bin_3_end:

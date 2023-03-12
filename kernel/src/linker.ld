@@ -18,6 +18,13 @@ SECTIONS
     text_start = .;
     .text : {
         *(.text.boot)
+        . = ALIGN(4k);
+
+        trampoline_start = .;
+        *(.text.trampoline)
+        . = ALIGN(4k);
+        trampoline_end = .;
+
         *(.text .text.*)
     }
     . = ALIGN(4K);
@@ -39,8 +46,11 @@ SECTIONS
     . = ALIGN(4K);
     data_end = .;
 
+    bss_stack_start = .;
     .bss : {
         *(.bss.stack)
+        bss_stack_end = .;
+
         bss_start = .;
         *(.bss .bss.*)
         *(.sbss .sbss.*)

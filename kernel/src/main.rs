@@ -31,11 +31,9 @@ pub fn rust_main() -> ! {
     logging::init();
 
     info!("rust-kernel has booted");
-    mem::init_heap();
-    mem::init_frame();
+    mem::init();
 
     trap::init();
-    file::load_bin();
 
     timer::enable_timer_interrupt();
     timer::set_trigger();

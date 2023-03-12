@@ -8,19 +8,24 @@ use alloc::vec;
 use alloc::vec::Vec;
 use bitflags::bitflags;
 
-use crate::mem::{allocate_frame, frame_allocator::FrameTracker, FrameNumber, PageNumber};
+use crate::{
+    constant::PAGE_SIZE,
+    mem::{allocate_frame, frame_allocator::FrameTracker, FrameNumber, PageNumber},
+};
+
+use super::{address::PageRange, VirtualAddress};
 
 bitflags! {
-  pub struct PTEFlags: u8 {
-    const V = 1 << 0;
-    const R = 1 << 1;
+    pub struct PTEFlags: u8 {
+        const V = 1 << 0;
+        const R = 1 << 1;
         const W = 1 << 2;
         const X = 1 << 3;
         const U = 1 << 4;
         const G = 1 << 5;
         const A = 1 << 6;
         const D = 1 << 7;
-  }
+    }
 }
 
 #[derive(Copy, Clone, Default)]
@@ -63,7 +68,7 @@ impl PageTableEntry {
 
 #[repr(C)]
 pub struct PageTable {
-    root_frame_number: FrameNumber,
+    pub root_frame_number: FrameNumber,
     frame_list: Vec<FrameTracker>,
 }
 
@@ -74,6 +79,10 @@ impl PageTable {
             root_frame_number: frame.frame_number,
             frame_list: vec![frame],
         }
+    }
+
+    pub fn get_satp(&self) -> usize {
+        8 << 60 | self.root_frame_number.bits
     }
 
     /// Create a [PageTable] where the `root_frame_number` points to
@@ -116,7 +125,7 @@ impl PageTable {
             if pte.is_valid() {
                 frame_number = pte.frame_number();
             } else {
-                break;
+                return None;
             }
         }
         None
@@ -143,4 +152,40 @@ impl PageTable {
         }
         None
     }
+}
+
+pub fn translate_buffer(satp: usize, buffer: *const u8, length: usize) -> Vec<&'static [u8]> {
+    let page_table = PageTable::from_satp(satp);
+    let mut translated_buffer = Vec::new();
+
+    let buffer_address_start = VirtualAddress::from(buffer as usize);
+    let buffer_address_end = buffer_address_start + length;
+
+    let page_range = PageRange::new(
+        PageNumber::from(buffer_address_start),
+        PageNumber::from(buffer_address_end).offset(1),
+    );
+
+    for (index, page_number) in page_range.iter().enumerate() {
+        let frame_number = page_table.translate(page_number).unwrap().frame_number();
+
+        let lower_bound = {
+            if index == 0 {
+                buffer_address_start.page_offset()
+            } else {
+                0
+            }
+        };
+
+        let upper_bound = {
+            if index == page_range.len() - 1 {
+                buffer_address_end.page_offset()
+            } else {
+                PAGE_SIZE
+            }
+        };
+        translated_buffer.push(&frame_number.get_bytes()[lower_bound..upper_bound]);
+    }
+
+    translated_buffer
 }

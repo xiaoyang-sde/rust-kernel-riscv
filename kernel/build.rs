@@ -49,8 +49,9 @@ _bin_address:"#,
     .section .data
     .global bin_{i}_start
     .global bin_{i}_end
+    .align 3
 bin_{i}_start:
-    .incbin "{TARGET_PATH}{bin}.bin"
+    .incbin "{TARGET_PATH}{bin}"
 bin_{i}_end:"#
         )?;
     }

@@ -8,7 +8,7 @@
   ld x\n, \n * 8(sp)
 .endm
 
-.section .text
+.section .text.trampoline
 .globl _trap
 .globl _restore
 .align 2
@@ -18,9 +18,6 @@ _trap:
   # 1. Save the user stack pointer to sscratch
   # 2. Read the kernel stack pointer from sscratch
   csrrw sp, sscratch, sp
-
-  # Allocate a `TrapContext` on the kernel stack
-  addi sp, sp, -34 * 8
 
   # Save register x1
   SAVE_REGISTER 1
@@ -44,11 +41,31 @@ _trap:
   csrr t2, sscratch
   sd t2, 2 * 8(sp)
 
-  # Call trap handler with the `TrapContext` as its argument
-  mv a0, sp
-  call trap_handler
+  # Load `trap_handler` to t0
+  ld t0, 34 * 8(sp)
+
+  # Load `kernel_satp` to t1
+  ld t1, 35 * 8(sp)
+
+  # Load `kernel_sp` to sp
+  ld sp, 36 * 8(sp)
+
+  # Switch to the kernel space
+  csrw satp, t1
+  sfence.vma
+
+  # Jump to `trap_handler`
+  jr t0
 
 _restore:
+  # Switch to the user space
+  csrw satp, a1
+  sfence.vma
+
+  # Restore the value of sscratch from the stack
+  csrw sscratch, a0
+  mv sp, a0
+
   # Restore the value of sstatus from the stack
   ld t0, 32 * 8(sp)
   csrw sstatus, t0
@@ -56,10 +73,6 @@ _restore:
   # Restore the value of sepc from the stack
   ld t1, 33 * 8(sp)
   csrw sepc, t1
-
-  # Restore the value of sscratch from the stack
-  ld t2, 2 * 8(sp)
-  csrw sscratch, t2
 
   # Restore registers x1 through x31 from the stack
   LOAD_REGISTER 1
@@ -71,11 +84,6 @@ _restore:
     .set n, n + 1
   .endr
 
-  # Deallocate the `TrapContext`
-  addi sp, sp, 34 * 8
-
-  # Swap sp and sscratch in an atomic operation
-  # 1. Save the kernel stack pointer to sscratch
-  # 2. Read the user stack pointer from sscratch
-  csrrw sp, sscratch, sp
+  # Restore the user stack
+  ld sp, 2 * 8(sp)
   sret

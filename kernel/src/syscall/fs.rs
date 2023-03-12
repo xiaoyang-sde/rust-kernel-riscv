@@ -1,9 +1,9 @@
 //! The `fs` module provides system calls to interact with the file system.
 
+use core::str;
 use log::error;
 
-use crate::print;
-use core::{slice, str};
+use crate::{mem::translate_buffer, print, task::get_satp};
 
 const STDOUT: usize = 1;
 
@@ -11,8 +11,9 @@ const STDOUT: usize = 1;
 pub fn sys_write(fd: usize, buffer: *const u8, length: usize) -> isize {
     match fd {
         STDOUT => {
-            let slice = unsafe { slice::from_raw_parts(buffer, length) };
-            print!("{}", str::from_utf8(slice).unwrap());
+            for buffer in translate_buffer(get_satp(), buffer, length) {
+                print!("{}", str::from_utf8(buffer).unwrap());
+            }
             length as isize
         }
         _ => {

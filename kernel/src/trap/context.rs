@@ -14,22 +14,32 @@ pub struct TrapContext {
     pub sstatus: Sstatus,
     /// The value of the `sepc` register.
     pub sepc: usize,
+
+    pub trap_handler: usize,
+    pub kernel_satp: usize,
+    pub kernel_sp: usize,
 }
 
 impl TrapContext {
-    /// Set the stack pointer value for the context.
-    pub fn set_stack_pointer(&mut self, stack_pointer: usize) {
-        self.register[2] = stack_pointer;
-    }
-
     /// Initialize a new `TrapContext` with an initial `sepc` and stack pointer value.
-    pub fn init_context(sepc: usize, stack_pointer: usize) -> Self {
+    pub fn init_context(
+        sepc: usize,
+        stack_pointer: usize,
+        trap_handler: usize,
+        kernel_satp: usize,
+        kernel_sp: usize,
+    ) -> Self {
         let mut context = Self {
             register: [0; 32],
             sstatus: sstatus::read(),
             sepc,
+            trap_handler,
+            kernel_satp,
+            kernel_sp,
         };
-        context.set_stack_pointer(stack_pointer);
+
+        // Set the stack pointer value for the context
+        context.register[2] = stack_pointer;
         context
     }
 }

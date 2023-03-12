@@ -38,23 +38,23 @@ trait FrameAllocator {
 }
 
 pub struct StackFrameAllocator {
-    physical_page_start: FrameNumber,
-    physical_page_end: FrameNumber,
+    frame_start: FrameNumber,
+    frame_end: FrameNumber,
     deallocated_page: Vec<FrameNumber>,
 }
 
 impl StackFrameAllocator {
-    fn init(&mut self, physical_page_start: FrameNumber, physical_page_end: FrameNumber) {
-        self.physical_page_start = physical_page_start;
-        self.physical_page_end = physical_page_end;
+    fn init(&mut self, frame_start: FrameNumber, frame_end: FrameNumber) {
+        self.frame_start = frame_start;
+        self.frame_end = frame_end;
     }
 }
 
 impl FrameAllocator for StackFrameAllocator {
     fn new() -> Self {
         StackFrameAllocator {
-            physical_page_start: 0.into(),
-            physical_page_end: 0.into(),
+            frame_start: 0.into(),
+            frame_end: 0.into(),
             deallocated_page: Vec::new(),
         }
     }
@@ -62,17 +62,17 @@ impl FrameAllocator for StackFrameAllocator {
     fn allocate(&mut self) -> Option<FrameNumber> {
         if let Some(frame_number) = self.deallocated_page.pop() {
             Some(frame_number)
-        } else if self.physical_page_start == self.physical_page_end {
+        } else if self.frame_start == self.frame_end {
             None
         } else {
-            let result = Some(self.physical_page_start);
-            self.physical_page_start = self.physical_page_start.offset(1);
+            let result = Some(self.frame_start);
+            self.frame_start = self.frame_start.offset(1);
             result
         }
     }
 
     fn deallocate(&mut self, frame_number: FrameNumber) {
-        if self.physical_page_start <= frame_number
+        if self.frame_start <= frame_number
             || self.deallocated_page.iter().any(|v| *v == frame_number)
         {
             panic!("the frame {:#x} has not been allocated", frame_number.bits)

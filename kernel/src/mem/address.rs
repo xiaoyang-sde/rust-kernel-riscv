@@ -1,9 +1,11 @@
 //! The `address` module defines various structs for the page table.
 
+use core::ops::{Add, Sub};
 use core::slice;
 
 use crate::constant::{PAGE_SIZE, PAGE_SIZE_BIT};
 use crate::mem::page_table::PageTableEntry;
+use crate::trap::TrapContext;
 
 const PHYSICAL_ADDRESS_SIZE: usize = 56;
 const FRAME_NUMBER_SIZE: usize = PHYSICAL_ADDRESS_SIZE - PAGE_SIZE_BIT;
@@ -90,6 +92,16 @@ impl FrameNumber {
         unsafe { slice::from_raw_parts_mut(physical_address.bits as *mut PageTableEntry, 512) }
     }
 
+    /// Interpret the frame as a [TrapContext] and return a reference to it.
+    pub fn get_trap_context(&self) -> &'static mut TrapContext {
+        let physical_address: PhysicalAddress = (*self).into();
+        unsafe {
+            (physical_address.bits as *mut TrapContext)
+                .as_mut()
+                .unwrap()
+        }
+    }
+
     pub fn offset(&mut self, rhs: usize) -> Self {
         FrameNumber {
             bits: (self.bits + rhs) & ((1 << FRAME_NUMBER_SIZE) - 1),
@@ -145,6 +157,14 @@ impl VirtualAddress {
     }
 }
 
+impl Add<usize> for VirtualAddress {
+    type Output = Self;
+
+    fn add(self, rhs: usize) -> Self {
+        Self::from(self.bits + rhs)
+    }
+}
+
 impl From<usize> for VirtualAddress {
     fn from(value: usize) -> Self {
         Self {
@@ -156,6 +176,14 @@ impl From<usize> for VirtualAddress {
 impl From<VirtualAddress> for usize {
     fn from(value: VirtualAddress) -> Self {
         value.bits
+    }
+}
+
+impl From<PageNumber> for VirtualAddress {
+    fn from(value: PageNumber) -> Self {
+        Self {
+            bits: value.bits << PAGE_SIZE_BIT,
+        }
     }
 }
 
@@ -195,6 +223,20 @@ impl From<PageNumber> for usize {
     }
 }
 
+impl Sub<PageNumber> for PageNumber {
+    type Output = usize;
+
+    fn sub(self, rhs: PageNumber) -> usize {
+        self.bits - rhs.bits
+    }
+}
+
+impl From<VirtualAddress> for PageNumber {
+    fn from(value: VirtualAddress) -> Self {
+        value.floor()
+    }
+}
+
 /// The `PageRange` struct represents a range of page numbers,
 /// with `start` and `end` field holding [PageNumber] values.
 pub struct PageRange {
@@ -209,6 +251,10 @@ impl PageRange {
 
     pub fn iter(&self) -> PageRangeIterator {
         PageRangeIterator::new(self.start, self.end)
+    }
+
+    pub fn len(&self) -> usize {
+        self.end - self.start
     }
 }
 

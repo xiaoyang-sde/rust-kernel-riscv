@@ -4,11 +4,17 @@
 //! [RISC-V Supervisor-Level ISA Documentation](https://five-embeddev.com/riscv-isa-manual/latest/supervisor.html).
 
 pub use self::context::TrapContext;
-use crate::{syscall, task, timer};
-use core::arch::global_asm;
+use crate::{
+    constant::{TRAMPOLINE, TRAP_CONTEXT},
+    syscall,
+    task::{self, get_satp, get_trap_context},
+    timer,
+};
+use core::arch::{asm, global_asm};
 use log::error;
 use riscv::register::{
     scause::{self, Exception, Interrupt},
+    stval,
     stvec::{self, TrapMode},
 };
 
@@ -20,23 +26,29 @@ extern "C" {
     fn _trap();
 }
 
+#[no_mangle]
+fn kernel_trap_handler() -> ! {
+    panic!("a trap from kernel!");
+}
+
 /// Initialize the `stvec` register to `Direct` mode
-/// with the address of the `_trap` function in `trap.asm`.
+/// with the address of the [kernel_trap_handler] function.
 pub fn init() {
     unsafe {
-        stvec::write(_trap as usize, TrapMode::Direct);
+        stvec::write(kernel_trap_handler as usize, TrapMode::Direct);
     }
 }
 
 /// Handle traps (exceptions and interrupts) raised from the user mode.
-///
-/// It takes a mutable reference to a [TrapContext] struct that contains the
-/// trap context (registers and other state) at the time of the trap. It then
-/// inspects the cause of the trap, handles it as appropriate (e.g., invoke a syscall),
-/// and returns the updated trap context.
 #[no_mangle]
-pub extern "C" fn trap_handler(context: &mut TrapContext) -> &mut TrapContext {
+pub extern "C" fn trap_handler() -> ! {
+    unsafe {
+        stvec::write(kernel_trap_handler as usize, TrapMode::Direct);
+    }
+
+    let context = get_trap_context();
     let scause = scause::read();
+    let stval = stval::read();
 
     match scause.cause() {
         scause::Trap::Exception(Exception::UserEnvCall) => {
@@ -49,12 +61,18 @@ pub extern "C" fn trap_handler(context: &mut TrapContext) -> &mut TrapContext {
             ) as usize;
         }
         scause::Trap::Exception(Exception::StoreFault)
-        | scause::Trap::Exception(Exception::StorePageFault) => {
-            error!("page fault");
+        | scause::Trap::Exception(Exception::StorePageFault)
+        | scause::Trap::Exception(Exception::LoadFault)
+        | scause::Trap::Exception(Exception::LoadPageFault) => {
+            error!("page fault at {:#x}", stval);
             task::exit_task();
         }
         scause::Trap::Exception(Exception::IllegalInstruction) => {
             error!("illegal instruction");
+            task::exit_task();
+        }
+        scause::Trap::Exception(Exception::InstructionMisaligned) => {
+            error!("misaligned instruction");
             task::exit_task();
         }
         scause::Trap::Interrupt(Interrupt::SupervisorTimer) => {
@@ -65,5 +83,29 @@ pub extern "C" fn trap_handler(context: &mut TrapContext) -> &mut TrapContext {
             panic!("unsupported trap {:?}", scause.cause())
         }
     }
-    context
+    trap_return();
+}
+
+#[no_mangle]
+pub fn trap_return() -> ! {
+    unsafe {
+        stvec::write(TRAMPOLINE, TrapMode::Direct);
+    }
+
+    extern "C" {
+        fn _trap();
+        fn _restore();
+    }
+    let restore = _restore as usize - _trap as usize + TRAMPOLINE;
+
+    unsafe {
+        asm!(
+            "fence.i",
+            "jr {restore}",
+            restore = in(reg) restore,
+            in("a0") TRAP_CONTEXT,
+            in("a1") get_satp(),
+            options(noreturn)
+        );
+    }
 }
