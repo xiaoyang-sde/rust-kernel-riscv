@@ -13,7 +13,7 @@ static mut KERNEL_HEAP: [u8; KERNEL_HEAP_SIZE] = [0; KERNEL_HEAP_SIZE];
 
 /// Initializes the kernel heap with a fixed size as the [KERNEL_HEAP_SIZE]
 /// constant. This function must be called before the heap can be used.
-pub fn init_heap() {
+pub fn init() {
     unsafe {
         HEAP_ALLOCATOR
             .lock()

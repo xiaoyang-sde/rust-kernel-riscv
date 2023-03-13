@@ -90,7 +90,7 @@ lazy_static! {
 
 /// Initializes a frame allocator that manages the physical address from `kernel_end` to
 /// [MEM_LIMIT].
-pub fn init_frame() {
+pub fn init() {
     extern "C" {
         fn kernel_end();
     }

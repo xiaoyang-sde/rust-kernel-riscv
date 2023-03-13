@@ -10,7 +10,7 @@ pub use page_table::translate_buffer;
 pub use segment::{MapPermission, PageSet, KERNEL_SPACE};
 
 pub fn init() {
-    heap_allocator::init_heap();
-    frame_allocator::init_frame();
+    heap_allocator::init();
+    frame_allocator::init();
     KERNEL_SPACE.borrow_mut().init();
 }
