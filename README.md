@@ -7,10 +7,8 @@
 - [x] Privilege level separation
 - [x] Page table
 - [x] Kernel page table isolation
-- [ ] Process management
-- [ ] File system
-- [ ] Inter-process communication
-- [ ] Linux-compatible system call interface
-- [ ] Asynchronous thread scheduler
-- [ ] Kernel module
+- [ ] Asynchronous thread scheduling
 - [ ] TCP/IP stack
+- [ ] Virtio driver
+- [ ] Linux-compatible system call interface
+- [ ] [musl libc-test](https://wiki.musl-libc.org/libc-test.html)
