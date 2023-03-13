@@ -1,7 +1,10 @@
-.PHONY: build qemu qemu-gdb clean
+.PHONY: build fmt qemu qemu-gdb clean
 
 build:
 	cargo build
+
+fmt:
+	cargo fmt
 
 qemu:
 	qemu-system-riscv64 \

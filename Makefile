@@ -4,6 +4,10 @@ build:
 	make -C kernel-lib build
 	make -C kernel build
 
+fmt:
+	make -C kernel fmt
+	make -C kernel-lib fmt
+
 qemu: build
 	make -C kernel qemu
 
