@@ -1,19 +1,22 @@
-.PHONY: build qemu qemu-debug
+.PHONY: build qemu qemu-gdb clean
 
 build:
 	cargo build
 
-qemu: build
+qemu:
 	qemu-system-riscv64 \
-        -machine virt \
-        -nographic \
-        -bios ../bootloader/opensbi-jump.bin \
-        -device loader,file=target/riscv64gc-unknown-none-elf/debug/kernel,addr=0x80200000
+    -machine virt \
+    -nographic \
+    -bios ../bootloader/opensbi-jump.bin \
+    -device loader,file=target/riscv64gc-unknown-none-elf/debug/kernel,addr=0x80200000
 
-qemu-debug: build
+qemu-gdb:
 	qemu-system-riscv64 \
-        -machine virt \
-        -nographic \
-        -bios ../bootloader/opensbi-jump.bin \
-        -device loader,file=target/riscv64gc-unknown-none-elf/debug/kernel,addr=0x80200000 \
-        -s -S
+    -machine virt \
+    -nographic \
+    -bios ../bootloader/opensbi-jump.bin \
+    -device loader,file=target/riscv64gc-unknown-none-elf/debug/kernel,addr=0x80200000 \
+    -s -S
+
+clean:
+	cargo clean
