@@ -15,3 +15,15 @@ pub fn sys_sched_yield() -> isize {
     task::suspend_task();
     0
 }
+
+pub fn sys_fork() -> isize {
+    -1
+}
+
+pub fn sys_waitpid(pid: isize, exit_code: *mut i32) -> isize {
+    -1
+}
+
+pub fn sys_exec(path: *const u8) -> isize {
+    -1
+}

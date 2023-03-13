@@ -1,9 +1,10 @@
 //! The `console` module contains functions that interacts with the debug console.
 //! It exports useful macros such as `print!` and `println!`.
 
-use crate::write;
+use crate::{read, write};
 use core::fmt::{self, Write};
 
+const STDIN: usize = 1;
 const STDOUT: usize = 1;
 
 struct Console;
@@ -13,6 +14,12 @@ impl Write for Console {
         write(STDOUT, string.as_bytes());
         Ok(())
     }
+}
+
+pub fn getchar() -> u8 {
+    let mut char = [0; 1];
+    read(STDIN, &mut char);
+    char[0]
 }
 
 pub fn print(args: fmt::Arguments) {

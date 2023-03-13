@@ -7,6 +7,10 @@ use crate::{mem::translate_buffer, print, task::satp};
 
 const STDOUT: usize = 1;
 
+pub fn sys_read(fd: usize, buffer: *const u8, length: usize) -> isize {
+    -1
+}
+
 /// Writes the contents of a buffer to a file descriptor.
 pub fn sys_write(fd: usize, buffer: *const u8, length: usize) -> isize {
     match fd {
