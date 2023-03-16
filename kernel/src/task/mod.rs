@@ -2,6 +2,7 @@
 //! that run in the user mode.
 
 mod context;
+mod pid;
 mod runtime;
 
 pub use context::{TaskContext, TaskControlBlock, TaskStatus};
