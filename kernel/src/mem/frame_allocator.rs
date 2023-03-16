@@ -77,7 +77,10 @@ impl FrameAllocator for StackFrameAllocator {
 
     fn deallocate(&mut self, frame_number: FrameNumber) {
         if self.frame_start <= frame_number || self.deallocated_page.contains(&frame_number) {
-            panic!("the frame {:#x} has not been allocated", frame_number.bits)
+            panic!(
+                "the frame {:#x} has not been allocated",
+                usize::from(frame_number)
+            )
         }
         self.deallocated_page.push(frame_number);
     }

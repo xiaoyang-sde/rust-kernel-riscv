@@ -82,7 +82,7 @@ impl From<PhysicalAddress> for usize {
 impl From<FrameNumber> for PhysicalAddress {
     fn from(value: FrameNumber) -> Self {
         Self {
-            bits: value.bits << PAGE_SIZE_BIT,
+            bits: usize::from(value) << PAGE_SIZE_BIT,
         }
     }
 }

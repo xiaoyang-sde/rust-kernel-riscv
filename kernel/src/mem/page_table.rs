@@ -39,7 +39,7 @@ pub struct PageTableEntry {
 impl PageTableEntry {
     pub fn new(frame_number: FrameNumber, flag: PTEFlags) -> Self {
         PageTableEntry {
-            bits: frame_number.bits << 10 | flag.bits as usize,
+            bits: usize::from(frame_number) << 10 | flag.bits as usize,
         }
     }
 
@@ -85,7 +85,7 @@ impl PageTable {
 
     /// Returns the value of the `satp` register that points to the page table.
     pub fn satp(&self) -> usize {
-        8 << 60 | self.root_frame_number.bits
+        8 << 60 | usize::from(self.root_frame_number)
     }
 
     /// Creates a [PageTable] where the `root_frame_number` points to the framed in the `satp`
