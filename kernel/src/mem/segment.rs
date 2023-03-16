@@ -127,6 +127,10 @@ impl PageSegment {
         }
     }
 
+    pub fn start(&self) -> PageNumber {
+        self.page_range.start()
+    }
+
     pub fn end(&self) -> PageNumber {
         self.page_range.end()
     }
@@ -161,7 +165,7 @@ impl PageSet {
         self.page_table.translate(page_number)
     }
 
-    fn push(&mut self, mut segment: PageSegment, bytes: Option<&[u8]>) {
+    pub fn push(&mut self, mut segment: PageSegment, bytes: Option<&[u8]>) {
         segment.map_range(&mut self.page_table);
         if let Some(bytes) = bytes {
             segment.clone_bytes(&mut self.page_table, bytes);
@@ -179,6 +183,22 @@ impl PageSet {
             PageSegment::new(start_address, end_address, MapType::Framed, map_permission),
             None,
         );
+    }
+
+    /// Removes a [PageSegment] that contains a specific [VirtualAddress].
+    pub fn remove_segment(&mut self, address: VirtualAddress) {
+        if let Some((index, segment)) =
+            self.segment_list
+                .iter_mut()
+                .enumerate()
+                .find(|(_, segment)| {
+                    VirtualAddress::from(segment.start()) <= address
+                        && address < VirtualAddress::from(segment.end())
+                })
+        {
+            segment.unmap_range(&mut self.page_table);
+            self.segment_list.remove(index);
+        }
     }
 
     pub fn from_kernel() -> Self {
