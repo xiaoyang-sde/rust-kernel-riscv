@@ -26,6 +26,7 @@ fn insert_bin_data() -> Result<()> {
     .section .data
     .global _bin_count
     .global _bin_address
+    .global _bin_name
 
 _bin_count:
     .quad {}
@@ -40,6 +41,16 @@ _bin_address:"#,
             r#"    .quad bin_{i}_start
     .quad bin_{i}_end"#
         )?;
+    }
+
+    writeln!(
+        linkage_file,
+        r#"
+_bin_name:"#
+    )?;
+
+    for bin in bin_vec.iter() {
+        writeln!(linkage_file, r#"    .string "{}""#, bin)?;
     }
 
     for (i, bin) in bin_vec.iter().enumerate() {
