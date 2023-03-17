@@ -33,14 +33,14 @@ pub fn kernel_stack_address(bin_index: usize) -> (VirtualAddress, VirtualAddress
     (kernel_stack_bottom, kernel_stack_top)
 }
 
-pub struct TaskControlBlock {
+pub struct ProcessControlBlock {
     task_status: TaskStatus,
     task_context: TaskContext,
     page_set: PageSet,
     trap_context_frame: FrameNumber,
 }
 
-impl TaskControlBlock {
+impl ProcessControlBlock {
     pub fn new(elf_data: &[u8], bin_index: usize) -> Self {
         let (page_set, user_stack_top, entry_point) = PageSet::from_elf(elf_data);
         let trap_context_frame = page_set

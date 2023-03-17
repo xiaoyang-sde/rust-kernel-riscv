@@ -2,7 +2,7 @@ use crate::{
     file::{get_bin_count, get_bin_data},
     sbi,
     sync::SharedRef,
-    task::{TaskContext, TaskControlBlock, TaskStatus},
+    task::{TaskContext, ProcessControlBlock, TaskStatus},
     trap::TrapContext,
 };
 use alloc::vec::Vec;
@@ -17,7 +17,7 @@ extern "C" {
 
 struct TaskRuntimeState {
     task_index: Option<usize>,
-    task_list: Vec<TaskControlBlock>,
+    task_list: Vec<ProcessControlBlock>,
 }
 
 pub struct TaskRuntime {
@@ -102,7 +102,7 @@ lazy_static! {
         let bin_count = get_bin_count();
         let mut task_list = Vec::new();
         for i in 0..bin_count {
-            task_list.push(TaskControlBlock::new(get_bin_data(i), i));
+            task_list.push(ProcessControlBlock::new(get_bin_data(i), i));
         }
 
         TaskRuntime {

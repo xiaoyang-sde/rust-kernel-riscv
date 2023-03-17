@@ -5,5 +5,5 @@ mod context;
 mod pid;
 mod runtime;
 
-pub use context::{TaskContext, TaskControlBlock, TaskStatus};
+pub use context::{TaskContext, ProcessControlBlock, TaskStatus};
 pub use runtime::{exit_task, run_init_task, satp, suspend_task, trap_context};
