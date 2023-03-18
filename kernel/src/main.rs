@@ -8,6 +8,7 @@ extern crate alloc;
 #[macro_use]
 mod console;
 mod constant;
+mod executor;
 mod file;
 mod lang_items;
 mod logging;
@@ -38,7 +39,7 @@ pub fn rust_main() -> ! {
     timer::enable_timer_interrupt();
     timer::set_trigger();
 
-    task::run_init_task();
+    executor::run_until_complete();
     panic!("unreachable code in main")
 }
 
