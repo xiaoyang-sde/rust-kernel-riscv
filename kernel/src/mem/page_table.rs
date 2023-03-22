@@ -88,7 +88,7 @@ impl PageTable {
         8 << 60 | usize::from(self.root_frame_number)
     }
 
-    /// Creates a [PageTable] where the `root_frame_number` points to the framed in the `satp`
+    /// Creates a [PageTable] where the `root_frame_number` points to the frame in the `satp`
     /// register.
     pub fn from_satp(satp: usize) -> Self {
         Self {

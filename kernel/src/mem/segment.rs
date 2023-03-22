@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use riscv::register::satp;
 use xmas_elf::{program::Type, ElfFile};
 
-use crate::constant::{MEM_LIMIT, PAGE_SIZE, TRAMPOLINE, TRAP_CONTEXT, USER_STACK_SIZE};
+use crate::constant::{MEM_LIMIT, PAGE_SIZE, TRAMPOLINE};
 use crate::mem::{
     address::PageRange,
     frame_allocator::{allocate_frame, FrameTracker},
@@ -313,42 +313,10 @@ impl PageSet {
             }
         }
 
-        let user_stack_bottom = virtual_address_limit + PAGE_SIZE;
-        let user_stack_top = user_stack_bottom + USER_STACK_SIZE;
-
-        page_set.push(
-            PageSegment::new(
-                user_stack_bottom,
-                user_stack_top,
-                MapType::Framed,
-                MapPermission::R | MapPermission::W | MapPermission::U,
-            ),
-            None,
-        );
-
-        page_set.push(
-            PageSegment::new(
-                user_stack_top,
-                user_stack_top,
-                MapType::Framed,
-                MapPermission::R | MapPermission::W | MapPermission::U,
-            ),
-            None,
-        );
-
-        page_set.push(
-            PageSegment::new(
-                VirtualAddress::from(TRAP_CONTEXT),
-                VirtualAddress::from(TRAMPOLINE),
-                MapType::Framed,
-                MapPermission::R | MapPermission::W,
-            ),
-            None,
-        );
-
+        let user_stack_base = virtual_address_limit + PAGE_SIZE;
         (
             page_set,
-            user_stack_top,
+            user_stack_base,
             VirtualAddress::from(elf.header.pt2.entry_point() as usize),
         )
     }

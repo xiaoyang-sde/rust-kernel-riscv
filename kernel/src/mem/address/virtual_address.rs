@@ -3,6 +3,8 @@ use core::ops::{Add, Sub};
 use crate::constant::{PAGE_SIZE, PAGE_SIZE_BIT};
 use crate::mem::PageNumber;
 
+const VIRTUAL_ADDRESS_SIZE: usize = 39;
+
 /// The `VirtualAddress` struct represents a 39-bit virtual address defined in the Sv39
 /// page table format.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
@@ -31,6 +33,16 @@ impl VirtualAddress {
     pub fn is_aligned(&self) -> bool {
         self.page_offset() == 0
     }
+
+    /// Returns a raw pointer to the physical address.
+    pub fn as_ptr(&self) -> *const u8 {
+        self.bits as *const u8
+    }
+
+    /// Returns a mutable raw pointer to the physical address.
+    pub fn as_ptr_mut(&self) -> *mut u8 {
+        self.bits as *mut u8
+    }
 }
 
 impl Add<usize> for VirtualAddress {
@@ -51,7 +63,10 @@ impl Sub<usize> for VirtualAddress {
 
 impl From<usize> for VirtualAddress {
     fn from(value: usize) -> Self {
-        assert!((value >> 39) == 0 || (value >> 39) == (1 << 25) - 1);
+        assert!(
+            (value >> VIRTUAL_ADDRESS_SIZE) == 0
+                || (value >> VIRTUAL_ADDRESS_SIZE) == (1 << 25) - 1
+        );
         Self { bits: value }
     }
 }
@@ -64,8 +79,11 @@ impl From<VirtualAddress> for usize {
 
 impl From<PageNumber> for VirtualAddress {
     fn from(value: PageNumber) -> Self {
-        Self {
-            bits: usize::from(value) << PAGE_SIZE_BIT,
+        let mut bits = usize::from(value) << PAGE_SIZE_BIT;
+
+        if (bits >> (VIRTUAL_ADDRESS_SIZE - 1)) == 1 {
+            bits |= !((1 << VIRTUAL_ADDRESS_SIZE) - 1);
         }
+        Self { bits }
     }
 }

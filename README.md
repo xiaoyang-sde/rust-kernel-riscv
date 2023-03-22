@@ -7,7 +7,7 @@
 - [x] Privilege level separation
 - [x] Page table
 - [x] Kernel page table isolation
-- [ ] Asynchronous thread scheduling
+- [x] Asynchronous thread scheduling
 - [ ] TCP/IP stack
 - [ ] Virtio driver
 - [ ] Linux-compatible system call interface

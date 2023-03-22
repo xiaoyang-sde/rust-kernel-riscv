@@ -36,7 +36,7 @@ pub fn get_bin(name: &str) -> Option<&'static [u8]> {
     let bin_count = get_bin_count();
     (0..bin_count)
         .find(|&bin_index| BIN_NAME_LIST[bin_index] == name)
-        .map(|bin_index| get_bin_data(bin_index))
+        .map(get_bin_data)
 }
 
 pub fn get_bin_data(bin_index: usize) -> &'static [u8] {

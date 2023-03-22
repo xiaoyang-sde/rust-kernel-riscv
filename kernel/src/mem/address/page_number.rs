@@ -1,6 +1,6 @@
 use core::ops::Sub;
 
-use crate::mem::VirtualAddress;
+use crate::{executor::TrapContext, mem::VirtualAddress};
 
 const PAGE_NUMBER_SIZE: usize = 27;
 
@@ -22,6 +22,16 @@ impl PageNumber {
     pub fn offset(&mut self, rhs: usize) -> Self {
         PageNumber {
             bits: (self.bits + rhs) & ((1 << PAGE_NUMBER_SIZE) - 1),
+        }
+    }
+
+    /// Interprets the page as a [TrapContext] and return a mutable reference to it.
+    pub fn as_trap_context_mut(&self) -> &'static mut TrapContext {
+        let virtual_address = VirtualAddress::from(*self);
+        unsafe {
+            (virtual_address.as_ptr_mut() as *mut TrapContext)
+                .as_mut()
+                .unwrap()
         }
     }
 }

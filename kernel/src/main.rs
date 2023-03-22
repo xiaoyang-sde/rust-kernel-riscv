@@ -1,7 +1,8 @@
 #![no_std]
 #![no_main]
-#![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
+#![feature(panic_info_message)]
+#![feature(naked_functions)]
 
 extern crate alloc;
 
@@ -18,7 +19,6 @@ mod sync;
 mod syscall;
 mod task;
 mod timer;
-mod trap;
 
 use core::arch::global_asm;
 use log::info;
@@ -27,23 +27,28 @@ global_asm!(include_str!("asm/boot.asm"));
 global_asm!(include_str!("asm/linkage.asm"));
 
 #[no_mangle]
-pub fn rust_main() -> ! {
+pub fn rust_main() {
     clear_bss();
     logging::init();
 
     info!("rust-kernel has booted");
     mem::init();
 
-    trap::init();
-
     timer::enable_timer_interrupt();
     timer::set_trigger();
 
+    let _ = task::Process::new("hello_world");
+    let _ = task::Process::new("privileged_instruction");
+    let _ = task::Process::new("page_fault");
+    let _ = task::Process::new("sleep");
+
+    executor::init();
     executor::run_until_complete();
-    panic!("unreachable code in main")
+
+    sbi::shutdown();
 }
 
-/// Initialize the `.bss` section with zeros.
+/// Initializes the `.bss` section with zeros.
 fn clear_bss() {
     // The `bss_start` and `bss_end` symbols are declared in the `src/linker.ld`,
     // which represent the start address and the end address of the `.bss` section.

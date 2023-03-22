@@ -1,47 +1,9 @@
-use core::{
-    mem,
-    ops::{Add, AddAssign},
-};
-
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
 
-use crate::{
-    constant::{KERNEL_STACK_SIZE, PAGE_SIZE, TRAMPOLINE},
-    mem::{MapPermission, VirtualAddress, KERNEL_SPACE},
-    sync::SharedRef,
-};
+use crate::sync::SharedRef;
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct Pid {
-    bits: usize,
-}
-
-impl From<usize> for Pid {
-    fn from(value: usize) -> Self {
-        Pid { bits: value }
-    }
-}
-
-impl From<Pid> for usize {
-    fn from(value: Pid) -> Self {
-        value.bits
-    }
-}
-
-impl Add<usize> for Pid {
-    type Output = Pid;
-
-    fn add(self, rhs: usize) -> Self {
-        Pid::from(self.bits + rhs)
-    }
-}
-
-impl AddAssign<usize> for Pid {
-    fn add_assign(&mut self, rhs: usize) {
-        self.bits += rhs
-    }
-}
+pub type Pid = usize;
 
 pub struct PidHandle {
     pid: Pid,
@@ -71,7 +33,7 @@ pub struct PidAllocator {
 impl PidAllocator {
     pub fn new() -> Self {
         PidAllocator {
-            state: Pid::from(0),
+            state: 0,
             deallocated_pid: Vec::new(),
         }
     }
@@ -98,60 +60,4 @@ lazy_static! {
 
 pub fn allocate_pid() -> PidHandle {
     PID_ALLOCATOR.borrow_mut().allocate()
-}
-
-pub struct KernelStack {
-    pid: Pid,
-    kernel_stack_top: VirtualAddress,
-    kernel_stack_bottom: VirtualAddress,
-}
-
-impl KernelStack {
-    pub fn new(pid_handle: &PidHandle) -> Self {
-        let pid = pid_handle.pid();
-        let kernel_stack_top =
-            VirtualAddress::from(TRAMPOLINE - usize::from(pid) * (KERNEL_STACK_SIZE + PAGE_SIZE));
-        let kernel_stack_bottom = kernel_stack_top - KERNEL_STACK_SIZE;
-
-        KERNEL_SPACE.borrow_mut().insert_frame(
-            kernel_stack_bottom,
-            kernel_stack_top,
-            MapPermission::R | MapPermission::W,
-        );
-        KernelStack {
-            pid,
-            kernel_stack_top,
-            kernel_stack_bottom,
-        }
-    }
-
-    pub fn top(&self) -> VirtualAddress {
-        self.kernel_stack_top
-    }
-
-    pub fn bottom(&self) -> VirtualAddress {
-        self.kernel_stack_bottom
-    }
-
-    pub fn push_top<T: Sized>(&self, value: T) -> *const T {
-        let pointer_mut = (usize::from(self.top()) - mem::size_of::<T>()) as *mut T;
-        unsafe {
-            *pointer_mut = value;
-        }
-        pointer_mut as *const T
-    }
-
-    pub fn push_top_mut<T: Sized>(&self, value: T) -> *mut T {
-        let pointer_mut = (usize::from(self.top()) - mem::size_of::<T>()) as *mut T;
-        unsafe {
-            *pointer_mut = value;
-        }
-        pointer_mut
-    }
-}
-
-impl Drop for KernelStack {
-    fn drop(&mut self) {
-        KERNEL_SPACE.borrow_mut().remove_segment(self.bottom());
-    }
 }

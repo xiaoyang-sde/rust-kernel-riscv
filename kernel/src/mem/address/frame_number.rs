@@ -2,8 +2,8 @@ use core::ops::{Add, AddAssign};
 use core::{mem, slice};
 
 use crate::constant::PAGE_SIZE;
+use crate::executor::TrapContext;
 use crate::mem::{page_table::PageTableEntry, PhysicalAddress};
-use crate::trap::TrapContext;
 
 const FRAME_NUMBER_SIZE: usize = 44;
 
