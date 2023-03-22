@@ -1,7 +1,8 @@
 //! The `logging` module implements the [log::Log] trait.
 
-use crate::println;
 use log::{self, Level, LevelFilter, Metadata, Record};
+
+use crate::println;
 
 struct KernelLogger;
 

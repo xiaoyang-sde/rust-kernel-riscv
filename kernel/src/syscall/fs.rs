@@ -1,11 +1,10 @@
 //! The `fs` module provides system calls to interact with the file system.
 
 use core::str;
+
 use log::error;
 
-use crate::{executor::TaskAction, mem::translate_buffer, print};
-
-use super::SystemCall;
+use crate::{executor::TaskAction, mem::translate_buffer, print, syscall::SystemCall};
 
 const STDOUT: usize = 1;
 

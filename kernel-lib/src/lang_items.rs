@@ -4,9 +4,9 @@
 //! Since the kernel doesn't depend on the `std` crate, it has to implement some
 //! lang items, such as the `panic_handler`.
 
-use log::error;
-
 use core::panic::PanicInfo;
+
+use log::error;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

@@ -3,8 +3,7 @@
 use log::info;
 
 use crate::executor::TaskAction;
-
-use super::SystemCall;
+use crate::syscall::SystemCall;
 
 impl SystemCall<'_> {
     /// Exits the current process with an exit code.

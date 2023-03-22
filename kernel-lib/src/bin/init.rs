@@ -1,9 +1,8 @@
 #![no_std]
 #![no_main]
 
-use log::info;
-
 use kernel_lib::{exec, fork, sched_yield, wait};
+use log::info;
 
 extern crate kernel_lib;
 

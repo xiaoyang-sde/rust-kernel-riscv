@@ -1,6 +1,4 @@
-use crate::{executor::TaskAction, timer};
-
-use super::SystemCall;
+use crate::{executor::TaskAction, syscall::SystemCall, timer};
 
 impl SystemCall<'_> {
     pub fn sys_get_time(&self) -> (isize, TaskAction) {

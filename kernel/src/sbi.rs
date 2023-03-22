@@ -4,9 +4,9 @@
 //! For more details, please refer to the
 //! [RISC-V SBI Specification](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/riscv-sbi.adoc).
 
-use log::info;
-
 use core::arch::asm;
+
+use log::info;
 
 const CONSOLE_PUTCHAR_EXTENSION: usize = 0x01;
 const SYSTEM_RESET_EXTENSION: usize = 0x53525354;

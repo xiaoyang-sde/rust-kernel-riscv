@@ -1,10 +1,10 @@
+use alloc::sync::Arc;
 use core::arch::asm;
 use core::future::Future;
 use core::mem::transmute;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 
-use alloc::sync::Arc;
 use log::error;
 use riscv::register::scause::{Exception, Interrupt};
 use riscv::register::{scause, stval};
@@ -12,7 +12,7 @@ use riscv::register::{scause, stval};
 use crate::constant::TRAMPOLINE;
 use crate::task::Thread;
 use crate::{executor, executor::TrapContext};
-use crate::{syscall, timer};
+use crate::{syscall::SystemCall, timer};
 
 pub enum TaskAction {
     Continue,
@@ -35,7 +35,7 @@ async fn thread_loop(thread: Arc<Thread>) {
         let stval = stval::read();
         let task_action = match scause.cause() {
             scause::Trap::Exception(Exception::UserEnvCall) => {
-                syscall::SystemCall::new(&thread).execute().await
+                SystemCall::new(&thread).execute().await
             }
             scause::Trap::Exception(Exception::StoreFault)
             | scause::Trap::Exception(Exception::StorePageFault)
@@ -133,7 +133,7 @@ pub unsafe extern "C" fn _enter_kernel_space() {
         // write the address of the page table of the kernel to satp
         "csrw satp, t3",
         "sfence.vma",
-        // read the return address, global pointer, thread pointer from the kernerl stack
+        // read the return address, global pointer, thread pointer from the kernel stack
         "ld ra, 0 * 8(sp)",
         "ld gp, 1 * 8(sp)",
         "ld tp, 2 * 8(sp)",
@@ -164,7 +164,7 @@ pub unsafe extern "C" fn _enter_user_space(trap_context: &mut TrapContext, user_
         ".p2align 2",
         // allocate 15 words on the kernel stack
         "addi sp, sp, -15 * 8",
-        // store the return address, global pointer, thread pointer on the kernerl stack
+        // store the return address, global pointer, thread pointer on the kernel stack
         "sd ra, 0 * 8(sp)",
         "sd gp, 1 * 8(sp)",
         "sd tp, 2 * 8(sp)",

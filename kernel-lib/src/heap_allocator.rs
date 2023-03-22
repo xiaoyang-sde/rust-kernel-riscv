@@ -2,6 +2,7 @@
 //! The heap is initialized with a fixed size as the [USER_HEAP_SIZE] constant.
 
 use core::alloc::Layout;
+
 use linked_list_allocator::LockedHeap;
 
 use crate::constant::USER_HEAP_SIZE;

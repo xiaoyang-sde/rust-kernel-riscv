@@ -1,8 +1,9 @@
 //! The `console` module contains functions that interacts with the debug console.
 //! It exports useful macros such as `print!` and `println!`.
 
-use crate::{read, write};
 use core::fmt::{self, Write};
+
+use crate::{read, write};
 
 const STDIN: usize = 1;
 const STDOUT: usize = 1;

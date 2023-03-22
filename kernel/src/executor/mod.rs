@@ -1,6 +1,6 @@
+use alloc::collections::VecDeque;
 use core::future::Future;
 
-use alloc::collections::VecDeque;
 use async_task::{Runnable, Task};
 use lazy_static::lazy_static;
 use riscv::register::{stvec, utvec::TrapMode};

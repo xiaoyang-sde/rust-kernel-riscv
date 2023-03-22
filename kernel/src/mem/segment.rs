@@ -1,8 +1,8 @@
-use core::arch::asm;
-
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
+use core::arch::asm;
+
 use bitflags::bitflags;
 use lazy_static::lazy_static;
 use riscv::register::satp;
@@ -45,7 +45,7 @@ extern "C" {
     fn trampoline_start();
 }
 
-/// The `PageSegment` struct represents a consective range of pages,
+/// The `PageSegment` struct represents a consecutive range of pages,
 /// which are mapped to frames in the same method (`Identical` or `Framed`)
 /// and have the same permissions.
 pub struct PageSegment {

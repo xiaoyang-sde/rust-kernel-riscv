@@ -1,13 +1,14 @@
-use super::{process::Process, tid::TidHandle};
+use alloc::sync::Arc;
+use core::cell::RefMut;
+
 use crate::constant::{PAGE_SIZE, TRAP_CONTEXT_BASE, USER_STACK_SIZE};
 use crate::mem::{MapPermission, PageNumber};
 use crate::sync::SharedRef;
+use crate::task::{Process, TidHandle};
 use crate::{
     executor::TrapContext,
     mem::{FrameNumber, VirtualAddress},
 };
-use alloc::sync::Arc;
-use core::cell::RefMut;
 
 pub struct Thread {
     tid_handle: TidHandle,

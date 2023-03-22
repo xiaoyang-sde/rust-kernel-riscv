@@ -21,6 +21,7 @@ mod task;
 mod timer;
 
 use core::arch::global_asm;
+
 use log::info;
 
 global_asm!(include_str!("asm/boot.asm"));

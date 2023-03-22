@@ -1,18 +1,16 @@
-use core::{cell::RefMut, sync::atomic::AtomicI32};
-
 use alloc::{
     sync::{Arc, Weak},
     vec::Vec,
 };
+use core::{cell::RefMut, sync::atomic::AtomicI32};
 
-use crate::{
-    executor::spawn_thread, file::get_bin, mem::PageSet, sync::SharedRef, task::pid::PidHandle,
-};
-
-use super::{
+use crate::task::{
     pid::{allocate_pid, Pid},
     thread::Thread,
     tid::{Tid, TidAllocator, TidHandle},
+};
+use crate::{
+    executor::spawn_thread, file::get_bin, mem::PageSet, sync::SharedRef, task::pid::PidHandle,
 };
 
 pub struct Process {

@@ -1,8 +1,9 @@
 //! The `console` module contains functions that interacts with the debug console.
 //! It exports useful macros such as `print!` and `println!`.
 
-use crate::sbi;
 use core::fmt::{self, Write};
+
+use crate::sbi;
 
 struct Console;
 

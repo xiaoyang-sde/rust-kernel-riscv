@@ -4,8 +4,8 @@
 
 #![macro_use]
 use alloc::vec;
-
 use alloc::vec::Vec;
+
 use bitflags::bitflags;
 
 use crate::{
