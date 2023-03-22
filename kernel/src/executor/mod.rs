@@ -1,3 +1,6 @@
+//! The `executor` module provides an executor that schedules and runs both the kernel threads and
+//! the user threads.
+
 use alloc::collections::VecDeque;
 use core::future::Future;
 
@@ -14,26 +17,36 @@ pub use context::TrapContext;
 pub use future::spawn_thread;
 pub use future::TaskAction;
 
-pub struct TaskQueue {
+/// Initializes the `stvec` to the address of the `_enter_kernel_space` function, which is located
+/// at the beginning of the [TRAMPOLINE] page.
+pub fn init() {
+    unsafe {
+        stvec::write(TRAMPOLINE, TrapMode::Direct);
+    }
+}
+
+/// The `TaskQueue` struct represents a queue of [Runnable] tasks, which are either kernel threads
+/// or user threads.
+struct TaskQueue {
     queue: VecDeque<Runnable>,
 }
 
 impl TaskQueue {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             queue: VecDeque::new(),
         }
     }
 
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.queue.len()
     }
 
-    pub fn push_back(&mut self, runnable: Runnable) {
+    fn push_back(&mut self, runnable: Runnable) {
         self.queue.push_back(runnable)
     }
 
-    pub fn pop_front(&mut self) -> Option<Runnable> {
+    fn pop_front(&mut self) -> Option<Runnable> {
         self.queue.pop_front()
     }
 }
@@ -52,6 +65,8 @@ where
     })
 }
 
+/// Runs an event loop that executes all the tasks in the `TASK_QUEUE` until there are no more task
+/// left.
 pub fn run_until_complete() {
     loop {
         let task = TASK_QUEUE.borrow_mut().pop_front();
@@ -60,11 +75,5 @@ pub fn run_until_complete() {
         } else {
             break;
         }
-    }
-}
-
-pub fn init() {
-    unsafe {
-        stvec::write(TRAMPOLINE, TrapMode::Direct);
     }
 }

@@ -6,7 +6,7 @@ use riscv::register::sstatus::Sstatus;
 /// The `TrapContext` struct is used to save and restore the context of a thread when an exception
 /// or interrupt occurs. It contains the values of all the general-purpose registers of the thread,
 /// the `sstatus` register, the `sepc` register, the address of the kernel stack, and the `satp`
-/// register value that referes to the kernel page table.
+/// register value that refers to the kernel page table.
 #[repr(C)]
 pub struct TrapContext {
     user_register: [usize; 32],
