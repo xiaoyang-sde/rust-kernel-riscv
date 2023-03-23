@@ -14,9 +14,9 @@ use crate::task::Thread;
 use crate::{executor, executor::TrapContext};
 use crate::{syscall::SystemCall, timer};
 
-/// The TaskAction enum specifies the operation that the executor should execute on a thread prior
+/// The `ControlFlow` enum specifies the operation that the executor should execute on a thread prior
 /// to returning to user space.
-pub enum TaskAction {
+pub enum ControlFlow {
     Continue,
     Yield,
     Break,
@@ -51,19 +51,19 @@ async fn thread_loop(thread: Arc<Thread>) {
             | scause::Trap::Exception(Exception::LoadFault)
             | scause::Trap::Exception(Exception::LoadPageFault) => {
                 error!("page fault at {:#x}", stval);
-                TaskAction::Break
+                ControlFlow::Break
             }
             scause::Trap::Exception(Exception::IllegalInstruction) => {
                 error!("illegal instruction");
-                TaskAction::Break
+                ControlFlow::Break
             }
             scause::Trap::Exception(Exception::InstructionMisaligned) => {
                 error!("misaligned instruction");
-                TaskAction::Break
+                ControlFlow::Break
             }
             scause::Trap::Interrupt(Interrupt::SupervisorTimer) => {
                 timer::set_trigger();
-                TaskAction::Yield
+                ControlFlow::Yield
             }
             _ => {
                 panic!("unsupported trap {:?}", scause.cause())
@@ -71,9 +71,9 @@ async fn thread_loop(thread: Arc<Thread>) {
         };
 
         match task_action {
-            TaskAction::Continue => continue,
-            TaskAction::Yield => yield_now().await,
-            TaskAction::Break => break,
+            ControlFlow::Continue => continue,
+            ControlFlow::Yield => yield_now().await,
+            ControlFlow::Break => break,
         }
     }
 }

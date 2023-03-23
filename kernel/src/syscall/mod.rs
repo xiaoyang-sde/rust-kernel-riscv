@@ -1,6 +1,6 @@
 //! The `syscall` module provides system calls for interacting with the operating system.
 
-use crate::{executor::TaskAction, task::Thread};
+use crate::{executor::ControlFlow, task::Thread};
 
 mod fs;
 mod process;
@@ -25,7 +25,7 @@ impl<'a> SystemCall<'a> {
     }
 
     /// Invokes a system call with the given arguments.
-    pub async fn execute(&mut self) -> TaskAction {
+    pub async fn execute(&mut self) -> ControlFlow {
         let trap_context = self.thread.state().kernel_trap_context_mut().unwrap();
         let system_call_id = trap_context.user_register(17);
         let argument_0 = trap_context.user_register(10);

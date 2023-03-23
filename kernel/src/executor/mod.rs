@@ -15,7 +15,7 @@ mod future;
 
 pub use context::TrapContext;
 pub use future::spawn_thread;
-pub use future::TaskAction;
+pub use future::ControlFlow;
 
 /// Initializes the `stvec` to the address of the `_enter_kernel_space` function, which is located
 /// at the beginning of the [TRAMPOLINE] page.
