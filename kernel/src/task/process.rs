@@ -40,10 +40,7 @@ impl Process {
             state: unsafe { SharedRef::new(ProcessState::new(page_set)) },
         });
 
-        let mut thread = Thread::new(process.clone(), user_stack_base);
-        thread.init();
-        let thread = Arc::new(thread);
-
+        let thread = Arc::new(Thread::new(process.clone(), user_stack_base));
         let trap_context = thread.state().kernel_trap_context_mut().unwrap();
         trap_context.set_user_register(2, usize::from(thread.state().user_stack_top().unwrap()));
         trap_context.set_user_sepc(usize::from(entry_point));

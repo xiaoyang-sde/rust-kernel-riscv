@@ -22,17 +22,15 @@ impl Thread {
     pub fn new(process: Arc<Process>, user_stack_base: VirtualAddress) -> Self {
         let tid_handle = process.state().allocate_tid();
 
-        Self {
+        let mut thread = Self {
             tid_handle,
             process,
             user_stack_base,
             state: unsafe { SharedRef::new(ThreadState::new()) },
-        }
-    }
-
-    pub fn init(&mut self) {
-        self.allocate_user_stack();
-        self.allocate_trap_context();
+        };
+        thread.allocate_user_stack();
+        thread.allocate_trap_context();
+        thread
     }
 
     fn allocate_user_stack(&mut self) {
