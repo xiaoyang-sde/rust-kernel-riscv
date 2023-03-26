@@ -37,7 +37,7 @@ async fn thread_loop(thread: Arc<Thread>) {
     };
 
     loop {
-        let trap_context = thread.state().user_trap_context_mut().unwrap();
+        let trap_context = thread.state().user_trap_context_mut();
         _enter_user_space(trap_context, thread.satp());
 
         let scause = scause::read();

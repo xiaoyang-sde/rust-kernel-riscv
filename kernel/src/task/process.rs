@@ -56,15 +56,10 @@ impl Process {
             state: unsafe { SharedRef::new(ProcessState::new(page_set, None)) },
         });
 
-        let thread = Arc::new({
-            let mut thread = Thread::new(process.clone(), user_stack_base);
-            thread.allocate_trap_context();
-            thread.allocate_user_stack();
-            thread
-        });
+        let thread = Arc::new(Thread::new(process.clone(), user_stack_base, true));
 
-        let trap_context = thread.state().kernel_trap_context_mut().unwrap();
-        trap_context.set_user_register(2, usize::from(thread.state().user_stack_top().unwrap()));
+        let trap_context = thread.state().kernel_trap_context_mut();
+        trap_context.set_user_register(2, usize::from(thread.state().user_stack_top()));
         trap_context.set_user_sepc(usize::from(entry_point));
         process.state().thread_list_mut().push(thread.clone());
 
@@ -76,32 +71,30 @@ impl Process {
     pub fn fork(self: &Arc<Self>) -> Arc<Self> {
         let pid_handle = allocate_pid();
         let page_set = PageSet::clone_from(self.state().page_set());
-        let process = Arc::new(Self {
+        let child_process = Arc::new(Self {
             pid_handle,
             exit_code: 0.into(),
             state: unsafe {
                 SharedRef::new(ProcessState::new(page_set, Some(Arc::downgrade(self))))
             },
         });
-        self.state().child_list_mut().push(process.clone());
+        self.state().child_list_mut().push(child_process.clone());
 
         let thread = Arc::new({
-            let mut thread = Thread::new(
-                process.clone(),
+            let thread = Thread::new(
+                child_process.clone(),
                 self.state().thread_list()[0].user_stack_base(),
+                false,
             );
-            thread.set_user_stack();
-            thread.set_trap_context();
-
-            let trap_context = thread.state().kernel_trap_context_mut().unwrap();
+            let trap_context = thread.state().kernel_trap_context_mut();
             trap_context.set_user_register(10, 0);
             thread
         });
-        process.state().thread_list_mut().push(thread.clone());
+        child_process.state().thread_list_mut().push(thread.clone());
 
-        insert_process(process.pid(), process.clone());
+        insert_process(child_process.pid(), child_process.clone());
         spawn_thread(thread);
-        process
+        child_process
     }
 
     pub fn pid(&self) -> Pid {
