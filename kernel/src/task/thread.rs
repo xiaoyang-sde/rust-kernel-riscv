@@ -1,4 +1,4 @@
-use alloc::sync::Arc;
+use alloc::sync::{Arc, Weak};
 use core::cell::RefMut;
 
 use crate::constant::{PAGE_SIZE, TRAP_CONTEXT_BASE, USER_STACK_SIZE};
@@ -12,7 +12,7 @@ use crate::{
 
 pub struct Thread {
     tid_handle: TidHandle,
-    process: Arc<Process>,
+    process: Weak<Process>,
     user_stack_base: VirtualAddress,
 
     state: SharedRef<ThreadState>,
@@ -24,7 +24,7 @@ impl Thread {
 
         let mut thread = Self {
             tid_handle,
-            process,
+            process: Arc::downgrade(&process),
             user_stack_base,
             state: unsafe { SharedRef::new(ThreadState::new()) },
         };
@@ -33,11 +33,15 @@ impl Thread {
         thread
     }
 
+    fn process(&self) -> Arc<Process> {
+        self.process.upgrade().unwrap()
+    }
+
     fn allocate_user_stack(&mut self) {
         let user_stack_bottom =
             self.user_stack_base + self.tid_handle.tid() * (PAGE_SIZE + USER_STACK_SIZE);
         let user_stack_top = user_stack_bottom + USER_STACK_SIZE;
-        self.process.state().page_set_mut().insert_frame(
+        self.process().state().page_set_mut().insert_frame(
             user_stack_bottom,
             user_stack_top,
             MapPermission::R | MapPermission::W | MapPermission::U,
@@ -48,7 +52,7 @@ impl Thread {
     fn deallocate_user_stack(&mut self) {
         let user_stack_bottom =
             self.user_stack_base + self.tid_handle.tid() * (PAGE_SIZE + USER_STACK_SIZE);
-        self.process
+        self.process()
             .state()
             .page_set_mut()
             .remove_segment(user_stack_bottom);
@@ -59,7 +63,7 @@ impl Thread {
             VirtualAddress::from(TRAP_CONTEXT_BASE) - self.tid_handle.tid() * PAGE_SIZE;
 
         let trap_context_top = trap_context_bottom + PAGE_SIZE;
-        self.process.state().page_set_mut().insert_frame(
+        self.process().state().page_set_mut().insert_frame(
             trap_context_bottom,
             trap_context_top,
             MapPermission::R | MapPermission::W,
@@ -68,7 +72,7 @@ impl Thread {
         let trap_context_page = PageNumber::from(trap_context_bottom);
 
         let trap_context_frame = self
-            .process
+            .process()
             .state()
             .page_set()
             .translate(trap_context_page)
@@ -81,7 +85,7 @@ impl Thread {
     fn deallocate_trap_context(&mut self) {
         let trap_context_bottom =
             VirtualAddress::from(TRAP_CONTEXT_BASE) - self.tid_handle.tid() * PAGE_SIZE;
-        self.process
+        self.process()
             .state()
             .page_set_mut()
             .remove_segment(trap_context_bottom);
@@ -92,7 +96,7 @@ impl Thread {
     }
 
     pub fn satp(&self) -> usize {
-        self.process.state().page_set().satp()
+        self.process().state().page_set().satp()
     }
 }
 
@@ -100,7 +104,9 @@ impl Drop for Thread {
     fn drop(&mut self) {
         self.deallocate_user_stack();
         self.deallocate_trap_context();
-        self.process.state().deallocated_tid(self.tid_handle.tid());
+        self.process()
+            .state()
+            .deallocated_tid(self.tid_handle.tid());
     }
 }
 
@@ -119,6 +125,14 @@ impl ThreadState {
             user_stack_bottom: None,
             exit_code: None,
         }
+    }
+
+    pub fn exit_code(&self) -> Option<i32> {
+        self.exit_code
+    }
+
+    pub fn set_exit_code(&mut self, exit_code: i32) {
+        self.exit_code = Some(exit_code);
     }
 
     pub fn user_stack_bottom(&self) -> Option<VirtualAddress> {

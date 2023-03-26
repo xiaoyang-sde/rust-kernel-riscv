@@ -8,6 +8,7 @@ use crate::syscall::SystemCall;
 impl SystemCall<'_> {
     /// Exits the current process with an exit code.
     pub fn sys_exit(&self, exit_code: i32) -> (isize, ControlFlow) {
+        self.thread.state().set_exit_code(exit_code);
         info!("exited with {}", exit_code);
         (0, ControlFlow::Break)
     }

@@ -1,8 +1,11 @@
 use alloc::{
+    collections::BTreeMap,
     sync::{Arc, Weak},
     vec::Vec,
 };
 use core::{cell::RefMut, sync::atomic::AtomicI32};
+
+use lazy_static::lazy_static;
 
 use crate::task::{
     pid::{allocate_pid, Pid},
@@ -13,10 +16,23 @@ use crate::{
     executor::spawn_thread, file::get_bin, mem::PageSet, sync::SharedRef, task::pid::PidHandle,
 };
 
+lazy_static! {
+    static ref PROCESS_MAP: SharedRef<BTreeMap<Pid, Arc<Process>>> =
+        unsafe { SharedRef::new(BTreeMap::new()) };
+}
+
+pub fn get_process(pid: Pid) -> Option<Arc<Process>> {
+    PROCESS_MAP.borrow_mut().get(&pid).cloned()
+}
+
+pub fn insert_process(pid: Pid, process: Arc<Process>) {
+    PROCESS_MAP.borrow_mut().insert(pid, process);
+}
+
 pub struct Process {
     pid_handle: PidHandle,
-    exit_code: AtomicI32,
 
+    exit_code: AtomicI32,
     state: SharedRef<ProcessState>,
 }
 
@@ -45,8 +61,9 @@ impl Process {
         trap_context.set_user_register(2, usize::from(thread.state().user_stack_top().unwrap()));
         trap_context.set_user_sepc(usize::from(entry_point));
         process.state().thread_list_mut().push(thread.clone());
-        spawn_thread(thread.clone());
 
+        insert_process(process.pid(), process.clone());
+        spawn_thread(thread);
         process
     }
 
