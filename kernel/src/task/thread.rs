@@ -22,22 +22,29 @@ impl Thread {
     pub fn new(process: Arc<Process>, user_stack_base: VirtualAddress) -> Self {
         let tid_handle = process.state().allocate_tid();
 
-        let mut thread = Self {
+        Self {
             tid_handle,
             process: Arc::downgrade(&process),
             user_stack_base,
             state: unsafe { SharedRef::new(ThreadState::new()) },
-        };
-        thread.allocate_user_stack();
-        thread.allocate_trap_context();
-        thread
+        }
     }
 
-    fn process(&self) -> Arc<Process> {
+    pub fn user_stack_base(&self) -> VirtualAddress {
+        self.user_stack_base
+    }
+
+    pub fn process(&self) -> Arc<Process> {
         self.process.upgrade().unwrap()
     }
 
-    fn allocate_user_stack(&mut self) {
+    pub fn set_user_stack(&mut self) {
+        let user_stack_bottom =
+            self.user_stack_base + self.tid_handle.tid() * (PAGE_SIZE + USER_STACK_SIZE);
+        self.state().set_user_stack_bottom(user_stack_bottom);
+    }
+
+    pub fn allocate_user_stack(&mut self) {
         let user_stack_bottom =
             self.user_stack_base + self.tid_handle.tid() * (PAGE_SIZE + USER_STACK_SIZE);
         let user_stack_top = user_stack_bottom + USER_STACK_SIZE;
@@ -58,7 +65,23 @@ impl Thread {
             .remove_segment(user_stack_bottom);
     }
 
-    fn allocate_trap_context(&mut self) {
+    pub fn set_trap_context(&mut self) {
+        let trap_context_bottom =
+            VirtualAddress::from(TRAP_CONTEXT_BASE) - self.tid_handle.tid() * PAGE_SIZE;
+        let trap_context_page = PageNumber::from(trap_context_bottom);
+
+        let trap_context_frame = self
+            .process()
+            .state()
+            .page_set()
+            .translate(trap_context_page)
+            .unwrap()
+            .frame_number();
+        self.state().set_trap_context_page(trap_context_page);
+        self.state().set_trap_context_frame(trap_context_frame);
+    }
+
+    pub fn allocate_trap_context(&mut self) {
         let trap_context_bottom =
             VirtualAddress::from(TRAP_CONTEXT_BASE) - self.tid_handle.tid() * PAGE_SIZE;
 

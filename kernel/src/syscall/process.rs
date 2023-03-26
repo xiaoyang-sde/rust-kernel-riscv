@@ -18,7 +18,8 @@ impl SystemCall<'_> {
     }
 
     pub fn sys_fork(&self) -> (isize, ControlFlow) {
-        (0, ControlFlow::Continue)
+        let process = self.thread.process().fork();
+        (process.pid() as isize, ControlFlow::Continue)
     }
 
     pub fn sys_waitpid(&self, _pid: isize, _exit_code: *mut i32) -> (isize, ControlFlow) {

@@ -27,6 +27,8 @@ impl<'a> SystemCall<'a> {
     /// Invokes a system call with the given arguments.
     pub async fn execute(&mut self) -> ControlFlow {
         let trap_context = self.thread.state().kernel_trap_context_mut().unwrap();
+        trap_context.set_user_sepc(trap_context.user_sepc() + 4);
+
         let system_call_id = trap_context.user_register(17);
         let argument_0 = trap_context.user_register(10);
         let argument_1 = trap_context.user_register(11);
@@ -45,7 +47,6 @@ impl<'a> SystemCall<'a> {
         };
 
         trap_context.set_user_register(10, exit_code as usize);
-        trap_context.set_user_sepc(trap_context.user_sepc() + 4);
         task_action
     }
 }

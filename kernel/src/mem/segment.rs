@@ -70,6 +70,35 @@ impl PageSegment {
         }
     }
 
+    pub fn clone_from(page_segment: &Self) -> Self {
+        Self {
+            page_range: PageRange::new(page_segment.start(), page_segment.end()),
+            frame_map: BTreeMap::new(),
+            map_type: page_segment.map_type(),
+            map_permission: page_segment.map_permission(),
+        }
+    }
+
+    pub fn start(&self) -> PageNumber {
+        self.page_range.start()
+    }
+
+    pub fn end(&self) -> PageNumber {
+        self.page_range.end()
+    }
+
+    pub fn page_range(&self) -> &PageRange {
+        &self.page_range
+    }
+
+    pub fn map_type(&self) -> MapType {
+        self.map_type
+    }
+
+    pub fn map_permission(&self) -> MapPermission {
+        self.map_permission
+    }
+
     /// Maps the range of pages represented with `page_range` to frames in the `page_table`.
     pub fn map_range(&mut self, page_table: &mut PageTable) {
         for page_number in self.page_range.iter() {
@@ -126,14 +155,6 @@ impl PageSegment {
             }
         }
     }
-
-    pub fn start(&self) -> PageNumber {
-        self.page_range.start()
-    }
-
-    pub fn end(&self) -> PageNumber {
-        self.page_range.end()
-    }
 }
 
 /// The `PageSet` struct represents a collection of related [PageSegment].
@@ -148,6 +169,32 @@ impl PageSet {
             page_table: PageTable::new(),
             segment_list: Vec::new(),
         }
+    }
+
+    pub fn clone_from(page_set: &Self) -> Self {
+        let mut page_set_clone = Self::new();
+        page_set_clone.page_table.map(
+            PageNumber::from(VirtualAddress::from(TRAMPOLINE)),
+            FrameNumber::from(PhysicalAddress::from(trampoline_start as usize)),
+            PTEFlags::R | PTEFlags::X,
+        );
+
+        for page_segment in page_set.segment_list() {
+            let page_segment_clone = PageSegment::clone_from(page_segment);
+            page_set_clone.push(page_segment_clone, None);
+
+            for page_number in page_segment.page_range().iter() {
+                let source = page_set.translate(page_number).unwrap().frame_number();
+                let destination = page_set_clone
+                    .translate(page_number)
+                    .unwrap()
+                    .frame_number();
+                destination
+                    .as_bytes_mut()
+                    .clone_from_slice(source.as_bytes());
+            }
+        }
+        page_set_clone
     }
 
     pub fn init(&self) {
@@ -171,6 +218,10 @@ impl PageSet {
             segment.clone_bytes(&mut self.page_table, bytes);
         }
         self.segment_list.push(segment);
+    }
+
+    pub fn segment_list(&self) -> &Vec<PageSegment> {
+        &self.segment_list
     }
 
     pub fn insert_frame(

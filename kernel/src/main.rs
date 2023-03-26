@@ -38,10 +38,7 @@ pub fn rust_main() {
     timer::enable_timer_interrupt();
     timer::set_trigger();
 
-    let _ = task::Process::new("hello_world");
-    let _ = task::Process::new("privileged_instruction");
-    let _ = task::Process::new("page_fault");
-    let _ = task::Process::new("sleep");
+    let _ = task::Process::new("fork");
 
     executor::init();
     executor::run_until_complete();

@@ -5,7 +5,7 @@
     .global _bin_name
 
 _bin_count:
-    .quad 6
+    .quad 7
 
 _bin_address:
     .quad bin_0_start
@@ -20,8 +20,11 @@ _bin_address:
     .quad bin_4_end
     .quad bin_5_start
     .quad bin_5_end
+    .quad bin_6_start
+    .quad bin_6_end
 
 _bin_name:
+    .string "fork"
     .string "hello_world"
     .string "init"
     .string "page_fault"
@@ -34,7 +37,7 @@ _bin_name:
     .global bin_0_end
     .align 3
 bin_0_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/hello_world"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/fork"
 bin_0_end:
 
     .section .data
@@ -42,7 +45,7 @@ bin_0_end:
     .global bin_1_end
     .align 3
 bin_1_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/init"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/hello_world"
 bin_1_end:
 
     .section .data
@@ -50,7 +53,7 @@ bin_1_end:
     .global bin_2_end
     .align 3
 bin_2_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/page_fault"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/init"
 bin_2_end:
 
     .section .data
@@ -58,7 +61,7 @@ bin_2_end:
     .global bin_3_end
     .align 3
 bin_3_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/privileged_instruction"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/page_fault"
 bin_3_end:
 
     .section .data
@@ -66,7 +69,7 @@ bin_3_end:
     .global bin_4_end
     .align 3
 bin_4_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/shell"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/privileged_instruction"
 bin_4_end:
 
     .section .data
@@ -74,5 +77,13 @@ bin_4_end:
     .global bin_5_end
     .align 3
 bin_5_start:
-    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/sleep"
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/shell"
 bin_5_end:
+
+    .section .data
+    .global bin_6_start
+    .global bin_6_end
+    .align 3
+bin_6_start:
+    .incbin "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/sleep"
+bin_6_end:
