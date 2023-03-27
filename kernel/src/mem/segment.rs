@@ -1,6 +1,4 @@
-use alloc::collections::BTreeMap;
-use alloc::sync::Arc;
-use alloc::vec::Vec;
+use alloc::{collections::BTreeMap, sync::Arc, vec::Vec};
 use core::arch::asm;
 
 use bitflags::bitflags;
@@ -8,14 +6,19 @@ use lazy_static::lazy_static;
 use riscv::register::satp;
 use xmas_elf::{program::Type, ElfFile};
 
-use crate::constant::{MEM_LIMIT, PAGE_SIZE, TRAMPOLINE};
-use crate::mem::{
-    address::PageRange,
-    frame_allocator::{allocate_frame, FrameTracker},
-    page_table::{PTEFlags, PageTable, PageTableEntry},
-    FrameNumber, PageNumber, PhysicalAddress, VirtualAddress,
+use crate::{
+    constant::{MEM_LIMIT, PAGE_SIZE, TRAMPOLINE},
+    mem::{
+        address::PageRange,
+        frame_allocator::{allocate_frame, FrameTracker},
+        page_table::{PTEFlags, PageTable, PageTableEntry},
+        FrameNumber,
+        PageNumber,
+        PhysicalAddress,
+        VirtualAddress,
+    },
+    sync::SharedRef,
 };
-use crate::sync::SharedRef;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum MapType {

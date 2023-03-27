@@ -3,8 +3,7 @@
 //! The page table supports 512 GB of virtual-address space.
 
 #![macro_use]
-use alloc::vec;
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 
 use bitflags::bitflags;
 
@@ -13,7 +12,9 @@ use crate::{
     mem::{
         address::PageRange,
         frame_allocator::{allocate_frame, FrameTracker},
-        FrameNumber, PageNumber, VirtualAddress,
+        FrameNumber,
+        PageNumber,
+        VirtualAddress,
     },
 };
 

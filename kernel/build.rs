@@ -1,5 +1,7 @@
-use std::fs::{read_dir, File};
-use std::io::{Result, Write};
+use std::{
+    fs::{read_dir, File},
+    io::{Result, Write},
+};
 
 static TARGET_PATH: &str = "../kernel-lib/target/riscv64gc-unknown-none-elf/debug/";
 

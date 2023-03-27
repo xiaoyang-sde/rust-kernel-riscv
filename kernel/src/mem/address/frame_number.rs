@@ -1,9 +1,14 @@
-use core::ops::{Add, AddAssign};
-use core::{mem, slice};
+use core::{
+    mem,
+    ops::{Add, AddAssign},
+    slice,
+};
 
-use crate::constant::PAGE_SIZE;
-use crate::executor::TrapContext;
-use crate::mem::{page_table::PageTableEntry, PhysicalAddress};
+use crate::{
+    constant::PAGE_SIZE,
+    executor::TrapContext,
+    mem::{page_table::PageTableEntry, PhysicalAddress},
+};
 
 const FRAME_NUMBER_SIZE: usize = 44;
 
@@ -48,7 +53,8 @@ impl FrameNumber {
         }
     }
 
-    /// Interprets the frame as a slice of [PageTableEntry] and return a mutable reference to the slice.
+    /// Interprets the frame as a slice of [PageTableEntry] and return a mutable reference to the
+    /// slice.
     pub fn as_pte_mut(&self) -> &'static mut [PageTableEntry] {
         let physical_address = PhysicalAddress::from(*self);
         unsafe {

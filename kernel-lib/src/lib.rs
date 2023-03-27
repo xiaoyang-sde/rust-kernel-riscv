@@ -12,7 +12,14 @@ mod logging;
 mod syscall;
 
 use syscall::{
-    sys_exec, sys_exit, sys_fork, sys_get_time, sys_read, sys_sched_yield, sys_waitpid, sys_write,
+    sys_exec,
+    sys_exit,
+    sys_fork,
+    sys_get_time,
+    sys_read,
+    sys_sched_yield,
+    sys_waitpid,
+    sys_write,
 };
 
 #[no_mangle]

@@ -1,7 +1,9 @@
 use core::ops::{Add, Sub};
 
-use crate::constant::{PAGE_SIZE, PAGE_SIZE_BIT};
-use crate::mem::PageNumber;
+use crate::{
+    constant::{PAGE_SIZE, PAGE_SIZE_BIT},
+    mem::PageNumber,
+};
 
 const VIRTUAL_ADDRESS_SIZE: usize = 39;
 

@@ -4,9 +4,11 @@ use alloc::vec::Vec;
 
 use lazy_static::lazy_static;
 
-use crate::constant::MEM_LIMIT;
-use crate::mem::{FrameNumber, PhysicalAddress};
-use crate::sync::SharedRef;
+use crate::{
+    constant::MEM_LIMIT,
+    mem::{FrameNumber, PhysicalAddress},
+    sync::SharedRef,
+};
 
 /// The `FrameTracker` struct represents a frame in the physical memory.
 /// It contains the frame number and is responsible for zeroing out the frame when it is created.

@@ -1,21 +1,30 @@
 use alloc::sync::Arc;
-use core::arch::asm;
-use core::future::Future;
-use core::mem::transmute;
-use core::pin::Pin;
-use core::task::{Context, Poll};
+use core::{
+    arch::asm,
+    future::Future,
+    mem::transmute,
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use log::error;
-use riscv::register::scause::{Exception, Interrupt};
-use riscv::register::{scause, stval};
+use riscv::register::{
+    scause,
+    scause::{Exception, Interrupt},
+    stval,
+};
 
-use crate::constant::TRAMPOLINE;
-use crate::task::Thread;
-use crate::{executor, executor::TrapContext};
-use crate::{syscall::SystemCall, timer};
+use crate::{
+    constant::TRAMPOLINE,
+    executor,
+    executor::TrapContext,
+    syscall::SystemCall,
+    task::Thread,
+    timer,
+};
 
-/// The `ControlFlow` enum specifies the operation that the executor should execute on a thread prior
-/// to returning to user space.
+/// The `ControlFlow` enum specifies the operation that the executor should execute on a thread
+/// prior to returning to user space.
 pub enum ControlFlow {
     Continue,
     Yield,

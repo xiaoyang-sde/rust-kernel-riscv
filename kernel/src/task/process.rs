@@ -7,13 +7,16 @@ use core::{cell::RefMut, sync::atomic::AtomicI32};
 
 use lazy_static::lazy_static;
 
-use crate::task::{
-    pid::{allocate_pid, Pid},
-    thread::Thread,
-    tid::{Tid, TidAllocator, TidHandle},
-};
 use crate::{
-    executor::spawn_thread, file::get_bin, mem::PageSet, sync::SharedRef, task::pid::PidHandle,
+    executor::spawn_thread,
+    file::get_bin,
+    mem::PageSet,
+    sync::SharedRef,
+    task::{
+        pid::{allocate_pid, Pid, PidHandle},
+        thread::Thread,
+        tid::{Tid, TidAllocator, TidHandle},
+    },
 };
 
 lazy_static! {

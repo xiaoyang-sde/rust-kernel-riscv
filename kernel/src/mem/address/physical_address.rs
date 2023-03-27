@@ -1,7 +1,9 @@
 use core::ops::{Add, Sub};
 
-use crate::constant::{PAGE_SIZE, PAGE_SIZE_BIT};
-use crate::mem::FrameNumber;
+use crate::{
+    constant::{PAGE_SIZE, PAGE_SIZE_BIT},
+    mem::FrameNumber,
+};
 
 const PHYSICAL_ADDRESS_SIZE: usize = 56;
 
