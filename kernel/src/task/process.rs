@@ -1,5 +1,6 @@
 use alloc::{
     collections::BTreeMap,
+    string::String,
     sync::{Arc, Weak},
     vec::Vec,
 };
@@ -60,7 +61,6 @@ impl Process {
         });
 
         let thread = Arc::new(Thread::new(process.clone(), user_stack_base, true));
-
         let trap_context = thread.state().kernel_trap_context_mut();
         trap_context.set_user_register(2, usize::from(thread.state().user_stack_top()));
         trap_context.set_user_sepc(usize::from(entry_point));
@@ -83,21 +83,33 @@ impl Process {
         });
         self.state().child_list_mut().push(child_process.clone());
 
-        let thread = Arc::new({
-            let thread = Thread::new(
-                child_process.clone(),
-                self.state().thread_list()[0].user_stack_base(),
-                false,
-            );
-            let trap_context = thread.state().kernel_trap_context_mut();
-            trap_context.set_user_register(10, 0);
-            thread
-        });
+        let thread = Arc::new(Thread::new(
+            child_process.clone(),
+            self.state().thread_list()[0].user_stack_base(),
+            false,
+        ));
+        let trap_context = thread.state().kernel_trap_context_mut();
+        trap_context.set_user_register(10, 0);
+
         child_process.state().thread_list_mut().push(thread.clone());
 
         insert_process(child_process.pid(), child_process.clone());
         spawn_thread(thread);
         child_process
+    }
+
+    pub fn exec(self: &Arc<Self>, bin_name: &str, _argument_list: Vec<String>) {
+        let elf_data = get_bin(bin_name).unwrap();
+        let (page_set, user_stack_base, entry_point) = PageSet::from_elf(elf_data);
+        self.state().set_page_set(page_set);
+
+        let thread = Arc::new(Thread::new(self.clone(), user_stack_base, true));
+        let trap_context = thread.state().kernel_trap_context_mut();
+        trap_context.set_user_register(2, usize::from(thread.state().user_stack_top()));
+        trap_context.set_user_sepc(usize::from(entry_point));
+        self.state().thread_list_mut()[0] = thread.clone();
+
+        spawn_thread(thread);
     }
 
     pub fn pid(&self) -> Pid {
@@ -138,6 +150,10 @@ impl ProcessState {
 
     pub fn page_set_mut(&mut self) -> &mut PageSet {
         &mut self.page_set
+    }
+
+    pub fn set_page_set(&mut self, page_set: PageSet) {
+        self.page_set = page_set;
     }
 
     pub fn allocate_tid(&mut self) -> TidHandle {

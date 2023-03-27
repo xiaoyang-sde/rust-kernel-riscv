@@ -3,10 +3,11 @@
 //! The page table supports 512 GB of virtual-address space.
 
 #![macro_use]
-use alloc::{vec, vec::Vec};
+use alloc::{string::String, vec, vec::Vec};
 
 use bitflags::bitflags;
 
+use super::PhysicalAddress;
 use crate::{
     constant::PAGE_SIZE,
     mem::{
@@ -110,8 +111,17 @@ impl PageTable {
         *pte = PageTableEntry::default();
     }
 
+    /// Finds the page table with a [VirtualAddress] and returns a [PhysicalAddress].
+    pub fn translate(&self, virtual_address: VirtualAddress) -> Option<PhysicalAddress> {
+        let page_number = PageNumber::from(virtual_address);
+        self.find_pte(page_number).map(|pte| {
+            let frame_number = pte.frame_number();
+            PhysicalAddress::from(frame_number) + virtual_address.page_offset()
+        })
+    }
+
     /// Finds the page table with a [PageNumber] and returns a [PageTableEntry].
-    pub fn translate(&self, page_number: PageNumber) -> Option<PageTableEntry> {
+    pub fn translate_page(&self, page_number: PageNumber) -> Option<PageTableEntry> {
         self.find_pte(page_number).map(|pte| *pte)
     }
 
@@ -157,6 +167,24 @@ impl PageTable {
     }
 }
 
+pub fn translate_string(satp: usize, buffer: *const u8) -> String {
+    let page_table = PageTable::from_satp(satp);
+    let mut virtual_address = VirtualAddress::from(buffer as usize);
+    let mut string = String::new();
+    loop {
+        let char_pointer = page_table.translate(virtual_address).unwrap().as_ptr() as *const u8;
+
+        let char = unsafe { *char_pointer as char };
+
+        if char == '\0' {
+            break;
+        }
+        string.push(char);
+        virtual_address += 1;
+    }
+    string
+}
+
 pub fn translate_buffer(satp: usize, buffer: *const u8, length: usize) -> Vec<&'static [u8]> {
     let page_table = PageTable::from_satp(satp);
     let mut translated_buffer = Vec::new();
@@ -170,8 +198,10 @@ pub fn translate_buffer(satp: usize, buffer: *const u8, length: usize) -> Vec<&'
     );
 
     for (index, page_number) in page_range.iter().enumerate() {
-        let frame_number = page_table.translate(page_number).unwrap().frame_number();
-
+        let frame_number = page_table
+            .translate_page(page_number)
+            .unwrap()
+            .frame_number();
         let lower_bound = {
             if index == 0 {
                 buffer_address_start.page_offset()

@@ -1,8 +1,10 @@
 //! The `process` module provides system calls to interact with processes.
 
+use alloc::vec::Vec;
+
 use log::info;
 
-use crate::{executor::ControlFlow, syscall::SystemCall};
+use crate::{executor::ControlFlow, mem::translate_string, syscall::SystemCall};
 
 impl SystemCall<'_> {
     /// Exits the current process with an exit code.
@@ -25,7 +27,9 @@ impl SystemCall<'_> {
         (0, ControlFlow::Continue)
     }
 
-    pub fn sys_exec(&self, _path: *const u8) -> (isize, ControlFlow) {
-        (0, ControlFlow::Continue)
+    pub fn sys_exec(&self, path: *const u8) -> (isize, ControlFlow) {
+        let path = translate_string(self.thread.satp(), path);
+        self.thread.process().exec(&path, Vec::new());
+        (0, ControlFlow::Break)
     }
 }

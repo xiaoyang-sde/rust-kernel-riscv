@@ -146,7 +146,7 @@ impl PageSegment {
         for state in self.page_range.iter() {
             let source = &bytes[offset..bytes.len().min(offset + PAGE_SIZE)];
             let destination = &mut page_table
-                .translate(state)
+                .translate_page(state)
                 .unwrap()
                 .frame_number()
                 .as_bytes_mut()[..source.len()];
@@ -212,7 +212,7 @@ impl PageSet {
     }
 
     pub fn translate(&self, page_number: PageNumber) -> Option<PageTableEntry> {
-        self.page_table.translate(page_number)
+        self.page_table.translate_page(page_number)
     }
 
     pub fn push(&mut self, mut segment: PageSegment, bytes: Option<&[u8]>) {

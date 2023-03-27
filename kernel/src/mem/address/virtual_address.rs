@@ -1,4 +1,4 @@
-use core::ops::{Add, Sub};
+use core::ops::{Add, AddAssign, Sub};
 
 use crate::{
     constant::{PAGE_SIZE, PAGE_SIZE_BIT},
@@ -36,12 +36,12 @@ impl VirtualAddress {
         self.page_offset() == 0
     }
 
-    /// Returns a raw pointer to the physical address.
+    /// Returns a raw pointer to the virtual address.
     pub fn as_ptr(&self) -> *const u8 {
         self.bits as *const u8
     }
 
-    /// Returns a mutable raw pointer to the physical address.
+    /// Returns a mutable raw pointer to the virtual address.
     pub fn as_ptr_mut(&self) -> *mut u8 {
         self.bits as *mut u8
     }
@@ -52,6 +52,12 @@ impl Add<usize> for VirtualAddress {
 
     fn add(self, rhs: usize) -> Self {
         Self::from(self.bits + rhs)
+    }
+}
+
+impl AddAssign<usize> for VirtualAddress {
+    fn add_assign(&mut self, rhs: usize) {
+        self.bits += rhs;
     }
 }
 
