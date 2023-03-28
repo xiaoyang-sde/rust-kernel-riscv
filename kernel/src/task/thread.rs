@@ -6,7 +6,7 @@ use crate::{
     executor::TrapContext,
     mem::{FrameNumber, MapPermission, PageNumber, VirtualAddress},
     sync::SharedRef,
-    task::{Process, TidHandle},
+    task::{tid::Tid, Process, TidHandle},
 };
 
 pub struct Thread {
@@ -45,7 +45,6 @@ impl Thread {
                 MapPermission::R | MapPermission::W,
             );
         }
-
         let trap_context_page = PageNumber::from(trap_context_bottom);
         let trap_context_frame = process
             .state()
@@ -68,6 +67,10 @@ impl Thread {
         }
     }
 
+    pub fn tid(&self) -> Tid {
+        self.tid_handle.tid()
+    }
+
     pub fn user_stack_base(&self) -> VirtualAddress {
         self.user_stack_base
     }
@@ -84,7 +87,7 @@ impl Thread {
         self.process().state().page_set().satp()
     }
 
-    fn deallocate_user_stack(&mut self) {
+    fn deallocate_user_stack(&self) {
         let user_stack_bottom =
             self.user_stack_base + self.tid_handle.tid() * (PAGE_SIZE + USER_STACK_SIZE);
         self.process()
@@ -93,7 +96,7 @@ impl Thread {
             .remove_segment(user_stack_bottom);
     }
 
-    fn deallocate_trap_context(&mut self) {
+    fn deallocate_trap_context(&self) {
         let trap_context_bottom =
             VirtualAddress::from(TRAP_CONTEXT_BASE) - self.tid_handle.tid() * PAGE_SIZE;
         self.process()

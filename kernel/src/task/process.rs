@@ -4,9 +4,10 @@ use alloc::{
     sync::{Arc, Weak},
     vec::Vec,
 };
-use core::{cell::RefMut, sync::atomic::AtomicI32};
+use core::cell::RefMut;
 
 use lazy_static::lazy_static;
+use log::info;
 
 use crate::{
     executor::spawn_thread,
@@ -33,14 +34,18 @@ pub fn insert_process(pid: Pid, process: Arc<Process>) {
     PROCESS_MAP.borrow_mut().insert(pid, process);
 }
 
+pub fn remove_process(pid: Pid) {
+    PROCESS_MAP.borrow_mut().remove(&pid);
+}
+
 pub struct Process {
     pid_handle: PidHandle,
 
-    exit_code: AtomicI32,
     state: SharedRef<ProcessState>,
 }
 
 pub struct ProcessState {
+    exit_code: usize,
     page_set: PageSet,
     tid_allocator: TidAllocator,
     parent: Option<Weak<Process>>,
@@ -56,7 +61,6 @@ impl Process {
         let pid_handle = allocate_pid();
         let process = Arc::new(Self {
             pid_handle,
-            exit_code: 0.into(),
             state: unsafe { SharedRef::new(ProcessState::new(page_set, None)) },
         });
 
@@ -76,7 +80,6 @@ impl Process {
         let page_set = PageSet::clone_from(self.state().page_set());
         let child_process = Arc::new(Self {
             pid_handle,
-            exit_code: 0.into(),
             state: unsafe {
                 SharedRef::new(ProcessState::new(page_set, Some(Arc::downgrade(self))))
             },
@@ -85,7 +88,7 @@ impl Process {
 
         let thread = Arc::new(Thread::new(
             child_process.clone(),
-            self.state().thread_list()[0].user_stack_base(),
+            self.state().main_thread().user_stack_base(),
             false,
         ));
         let trap_context = thread.state().kernel_trap_context_mut();
@@ -107,9 +110,16 @@ impl Process {
         let trap_context = thread.state().kernel_trap_context_mut();
         trap_context.set_user_register(2, usize::from(thread.state().user_stack_top()));
         trap_context.set_user_sepc(usize::from(entry_point));
-        self.state().thread_list_mut()[0] = thread.clone();
+        *self.state().main_thread_mut() = thread.clone();
 
         spawn_thread(thread);
+    }
+
+    pub fn exit(&self, exit_code: usize) {
+        self.state().set_exit_code(exit_code);
+        self.state().child_list_mut().clear();
+        remove_process(self.pid());
+        info!("process {} exited with {}", self.pid(), exit_code);
     }
 
     pub fn pid(&self) -> Pid {
@@ -129,7 +139,12 @@ impl ProcessState {
             tid_allocator: TidAllocator::new(),
             child_list: Vec::new(),
             thread_list: Vec::new(),
+            exit_code: 0,
         }
+    }
+
+    pub fn set_exit_code(&mut self, exit_code: usize) {
+        self.exit_code = exit_code;
     }
 
     pub fn child_list_mut(&mut self) -> &mut Vec<Arc<Process>> {
@@ -142,6 +157,14 @@ impl ProcessState {
 
     pub fn thread_list_mut(&mut self) -> &mut Vec<Arc<Thread>> {
         &mut self.thread_list
+    }
+
+    pub fn main_thread(&self) -> &Arc<Thread> {
+        &self.thread_list[0]
+    }
+
+    pub fn main_thread_mut(&mut self) -> &mut Arc<Thread> {
+        &mut self.thread_list[0]
     }
 
     pub fn page_set(&self) -> &PageSet {

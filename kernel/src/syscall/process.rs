@@ -2,16 +2,22 @@
 
 use alloc::vec::Vec;
 
-use log::info;
-
 use crate::{executor::ControlFlow, mem::translate_string, syscall::SystemCall};
 
 impl SystemCall<'_> {
     /// Exits the current process with an exit code.
-    pub fn sys_exit(&self, exit_code: i32) -> (isize, ControlFlow) {
-        self.thread.state().set_exit_code(exit_code);
-        info!("exited with {}", exit_code);
-        (0, ControlFlow::Break)
+    pub fn sys_exit(&self, exit_code: usize) -> (isize, ControlFlow) {
+        let tid = self.thread.tid();
+        let process = self.thread.process();
+        process
+            .state()
+            .thread_list_mut()
+            .retain(|thread| thread.tid() != tid);
+
+        if process.state().thread_list().is_empty() {
+            process.exit(exit_code);
+        }
+        (0, ControlFlow::Exit)
     }
 
     pub fn sys_sched_yield(&self) -> (isize, ControlFlow) {
@@ -30,6 +36,6 @@ impl SystemCall<'_> {
     pub fn sys_exec(&self, path: *const u8) -> (isize, ControlFlow) {
         let path = translate_string(self.thread.satp(), path);
         self.thread.process().exec(&path, Vec::new());
-        (0, ControlFlow::Break)
+        (0, ControlFlow::Exit)
     }
 }

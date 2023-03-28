@@ -25,10 +25,11 @@ use crate::{
 
 /// The `ControlFlow` enum specifies the operation that the executor should execute on a thread
 /// prior to returning to user space.
+#[derive(PartialEq, Eq)]
 pub enum ControlFlow {
     Continue,
     Yield,
-    Break,
+    Exit,
 }
 
 /// The `thread_loop` future represents the lifetime of a user thread.
@@ -51,7 +52,7 @@ async fn thread_loop(thread: Arc<Thread>) {
 
         let scause = scause::read();
         let stval = stval::read();
-        let task_action = match scause.cause() {
+        let control_flow = match scause.cause() {
             scause::Trap::Exception(Exception::UserEnvCall) => {
                 SystemCall::new(&thread).execute().await
             }
@@ -60,15 +61,15 @@ async fn thread_loop(thread: Arc<Thread>) {
             | scause::Trap::Exception(Exception::LoadFault)
             | scause::Trap::Exception(Exception::LoadPageFault) => {
                 error!("page fault at {:#x}", stval);
-                ControlFlow::Break
+                ControlFlow::Exit
             }
             scause::Trap::Exception(Exception::IllegalInstruction) => {
                 error!("illegal instruction");
-                ControlFlow::Break
+                ControlFlow::Exit
             }
             scause::Trap::Exception(Exception::InstructionMisaligned) => {
                 error!("misaligned instruction");
-                ControlFlow::Break
+                ControlFlow::Exit
             }
             scause::Trap::Interrupt(Interrupt::SupervisorTimer) => {
                 timer::set_trigger();
@@ -79,10 +80,10 @@ async fn thread_loop(thread: Arc<Thread>) {
             }
         };
 
-        match task_action {
+        match control_flow {
             ControlFlow::Continue => continue,
             ControlFlow::Yield => yield_now().await,
-            ControlFlow::Break => break,
+            ControlFlow::Exit => break,
         }
     }
 }
