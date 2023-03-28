@@ -41,7 +41,7 @@ pub struct PageTableEntry {
 impl PageTableEntry {
     pub fn new(frame_number: FrameNumber, flag: PTEFlags) -> Self {
         PageTableEntry {
-            bits: usize::from(frame_number) << 10 | flag.bits as usize,
+            bits: usize::from(frame_number) << 10 | flag.bits() as usize,
         }
     }
 

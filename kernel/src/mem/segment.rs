@@ -27,6 +27,7 @@ pub enum MapType {
 }
 
 bitflags! {
+  #[derive(Clone, Copy)]
   pub struct MapPermission: u8 {
       const R = 1 << 1;
       const W = 1 << 2;
@@ -128,7 +129,7 @@ impl PageSegment {
             }
         };
 
-        let pte_flags = PTEFlags::from_bits(self.map_permission.bits).unwrap();
+        let pte_flags = PTEFlags::from_bits(self.map_permission.bits()).unwrap();
         page_table.map(page_number, frame_number, pte_flags);
     }
 
