@@ -13,7 +13,7 @@ use crate::{
     executor::spawn_thread,
     file::get_bin,
     mem::PageSet,
-    sync::SharedRef,
+    sync::{Mutex, MutexGuard},
     task::{
         pid::{allocate_pid, Pid, PidHandle},
         thread::Thread,
@@ -22,20 +22,19 @@ use crate::{
 };
 
 lazy_static! {
-    static ref PROCESS_MAP: SharedRef<BTreeMap<Pid, Arc<Process>>> =
-        unsafe { SharedRef::new(BTreeMap::new()) };
+    static ref PROCESS_MAP: Mutex<BTreeMap<Pid, Arc<Process>>> = Mutex::new(BTreeMap::new());
 }
 
 pub fn get_process(pid: Pid) -> Option<Arc<Process>> {
-    PROCESS_MAP.borrow_mut().get(&pid).cloned()
+    PROCESS_MAP.lock().get(&pid).cloned()
 }
 
 pub fn insert_process(pid: Pid, process: Arc<Process>) {
-    PROCESS_MAP.borrow_mut().insert(pid, process);
+    PROCESS_MAP.lock().insert(pid, process);
 }
 
 pub fn remove_process(pid: Pid) {
-    PROCESS_MAP.borrow_mut().remove(&pid);
+    PROCESS_MAP.lock().remove(&pid);
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -47,7 +46,7 @@ pub enum Status {
 pub struct Process {
     pid_handle: PidHandle,
 
-    state: SharedRef<ProcessState>,
+    state: Mutex<ProcessState>,
 }
 
 pub struct ProcessState {
@@ -68,7 +67,7 @@ impl Process {
         let pid_handle = allocate_pid();
         let process = Arc::new(Self {
             pid_handle,
-            state: unsafe { SharedRef::new(ProcessState::new(page_set, None)) },
+            state: Mutex::new(ProcessState::new(page_set, None)),
         });
 
         let thread = Arc::new(Thread::new(process.clone(), user_stack_base, true));
@@ -87,9 +86,7 @@ impl Process {
         let page_set = PageSet::clone_from(self.state().page_set());
         let child_process = Arc::new(Self {
             pid_handle,
-            state: unsafe {
-                SharedRef::new(ProcessState::new(page_set, Some(Arc::downgrade(self))))
-            },
+            state: Mutex::new(ProcessState::new(page_set, Some(Arc::downgrade(self)))),
         });
         self.state().child_list_mut().push(child_process.clone());
 
@@ -135,8 +132,8 @@ impl Process {
         self.pid_handle.pid()
     }
 
-    pub fn state(&self) -> RefMut<'_, ProcessState> {
-        self.state.borrow_mut()
+    pub fn state(&self) -> MutexGuard<'_, ProcessState> {
+        self.state.lock()
     }
 }
 

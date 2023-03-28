@@ -5,7 +5,7 @@ use crate::{
     constant::{PAGE_SIZE, TRAP_CONTEXT_BASE, USER_STACK_SIZE},
     executor::TrapContext,
     mem::{FrameNumber, MapPermission, PageNumber, VirtualAddress},
-    sync::SharedRef,
+    sync::{Mutex, MutexGuard},
     task::{tid::Tid, Process, TidHandle},
 };
 
@@ -14,7 +14,7 @@ pub struct Thread {
     process: Weak<Process>,
     user_stack_base: VirtualAddress,
 
-    state: SharedRef<ThreadState>,
+    state: Mutex<ThreadState>,
 }
 
 impl Thread {
@@ -57,13 +57,11 @@ impl Thread {
             tid_handle,
             process: Arc::downgrade(&process),
             user_stack_base,
-            state: unsafe {
-                SharedRef::new(ThreadState::new(
-                    trap_context_page,
-                    trap_context_frame,
-                    user_stack_bottom,
-                ))
-            },
+            state: Mutex::new(ThreadState::new(
+                trap_context_page,
+                trap_context_frame,
+                user_stack_bottom,
+            )),
         }
     }
 
@@ -79,8 +77,8 @@ impl Thread {
         self.process.upgrade().unwrap()
     }
 
-    pub fn state(&self) -> RefMut<'_, ThreadState> {
-        self.state.borrow_mut()
+    pub fn state(&self) -> MutexGuard<'_, ThreadState> {
+        self.state.lock()
     }
 
     pub fn satp(&self) -> usize {

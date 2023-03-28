@@ -17,7 +17,7 @@ use crate::{
         PhysicalAddress,
         VirtualAddress,
     },
-    sync::SharedRef,
+    sync::Mutex,
 };
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -377,6 +377,5 @@ impl PageSet {
 }
 
 lazy_static! {
-    pub static ref KERNEL_SPACE: Arc<SharedRef<PageSet>> =
-        Arc::new(unsafe { SharedRef::new(PageSet::from_kernel()) });
+    pub static ref KERNEL_SPACE: Arc<Mutex<PageSet>> = Arc::new(Mutex::new(PageSet::from_kernel()));
 }

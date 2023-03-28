@@ -12,5 +12,5 @@ pub use segment::{MapPermission, PageSet, KERNEL_SPACE};
 pub fn init() {
     heap_allocator::init();
     frame_allocator::init();
-    KERNEL_SPACE.borrow_mut().init();
+    KERNEL_SPACE.lock().init();
 }

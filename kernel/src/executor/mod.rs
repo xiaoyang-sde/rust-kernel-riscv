@@ -8,7 +8,7 @@ use async_task::{Runnable, Task};
 use lazy_static::lazy_static;
 use riscv::register::{stvec, utvec::TrapMode};
 
-use crate::{constant::TRAMPOLINE, sync::SharedRef};
+use crate::{constant::TRAMPOLINE, sync::Mutex};
 
 mod context;
 mod future;
@@ -51,7 +51,7 @@ impl TaskQueue {
 }
 
 lazy_static! {
-    static ref TASK_QUEUE: SharedRef<TaskQueue> = unsafe { SharedRef::new(TaskQueue::new()) };
+    static ref TASK_QUEUE: Mutex<TaskQueue> = Mutex::new(TaskQueue::new());
 }
 
 fn spawn<F>(future: F) -> (Runnable, Task<F::Output>)
@@ -60,7 +60,7 @@ where
     F::Output: Send + 'static,
 {
     async_task::spawn(future, |runnable| {
-        TASK_QUEUE.borrow_mut().push_back(runnable);
+        TASK_QUEUE.lock().push_back(runnable);
     })
 }
 
@@ -68,7 +68,7 @@ where
 /// left.
 pub fn run_until_complete() {
     loop {
-        let task = TASK_QUEUE.borrow_mut().pop_front();
+        let task = TASK_QUEUE.lock().pop_front();
         if let Some(task) = task {
             task.run();
         } else {

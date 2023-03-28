@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use crate::{
     constant::MEM_LIMIT,
     mem::{FrameNumber, PhysicalAddress},
-    sync::SharedRef,
+    sync::Mutex,
 };
 
 /// The `FrameTracker` struct represents a frame in the physical memory.
@@ -90,8 +90,8 @@ impl FrameAllocator for StackFrameAllocator {
 }
 
 lazy_static! {
-    pub static ref FRAME_ALLOCATOR: SharedRef<StackFrameAllocator> =
-        unsafe { SharedRef::new(StackFrameAllocator::new()) };
+    pub static ref FRAME_ALLOCATOR: Mutex<StackFrameAllocator> =
+        Mutex::new(StackFrameAllocator::new());
 }
 
 /// Initializes a frame allocator that manages the physical address from `kernel_end` to
@@ -101,7 +101,7 @@ pub fn init() {
         fn kernel_end();
     }
 
-    FRAME_ALLOCATOR.borrow_mut().init(
+    FRAME_ALLOCATOR.lock().init(
         PhysicalAddress::from(kernel_end as usize).ceil(),
         PhysicalAddress::from(MEM_LIMIT).floor(),
     );
@@ -109,13 +109,10 @@ pub fn init() {
 
 /// Allocates a frame and returns a [FrameTracker] to track the allocated frame when succeeded.
 pub fn allocate_frame() -> Option<FrameTracker> {
-    FRAME_ALLOCATOR
-        .borrow_mut()
-        .allocate()
-        .map(FrameTracker::new)
+    FRAME_ALLOCATOR.lock().allocate().map(FrameTracker::new)
 }
 
 /// Deallocates the frame with a specific [FrameNumber].
 pub fn deallocate_frame(frame_number: FrameNumber) {
-    FRAME_ALLOCATOR.borrow_mut().deallocate(frame_number);
+    FRAME_ALLOCATOR.lock().deallocate(frame_number);
 }

@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use lazy_static::lazy_static;
 
-use crate::sync::SharedRef;
+use crate::sync::Mutex;
 
 pub type Pid = usize;
 
@@ -22,7 +22,7 @@ impl PidHandle {
 
 impl Drop for PidHandle {
     fn drop(&mut self) {
-        PID_ALLOCATOR.borrow_mut().deallocate(self.pid);
+        PID_ALLOCATOR.lock().deallocate(self.pid);
     }
 }
 
@@ -55,10 +55,9 @@ impl PidAllocator {
 }
 
 lazy_static! {
-    static ref PID_ALLOCATOR: SharedRef<PidAllocator> =
-        unsafe { SharedRef::new(PidAllocator::new()) };
+    static ref PID_ALLOCATOR: Mutex<PidAllocator> = Mutex::new(PidAllocator::new());
 }
 
 pub fn allocate_pid() -> PidHandle {
-    PID_ALLOCATOR.borrow_mut().allocate()
+    PID_ALLOCATOR.lock().allocate()
 }
