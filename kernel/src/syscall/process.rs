@@ -50,6 +50,6 @@ impl SystemCall<'_> {
     pub fn sys_exec(&self, path: *const u8) -> (isize, ControlFlow) {
         let path = translate_string(self.thread.satp(), path);
         self.thread.process().exec(&path, Vec::new());
-        (0, ControlFlow::Exit)
+        (0, ControlFlow::Continue)
     }
 }

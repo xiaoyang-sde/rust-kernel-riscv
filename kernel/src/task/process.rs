@@ -4,7 +4,6 @@ use alloc::{
     sync::{Arc, Weak},
     vec::Vec,
 };
-use core::cell::RefMut;
 
 use lazy_static::lazy_static;
 use log::info;
@@ -13,11 +12,11 @@ use crate::{
     executor::spawn_thread,
     file::get_bin,
     mem::PageSet,
-    sync::{Mutex, MutexGuard},
+    sync::{EventBus, Mutex, MutexGuard},
     task::{
         pid::{allocate_pid, Pid, PidHandle},
         thread::Thread,
-        tid::{Tid, TidAllocator, TidHandle},
+        tid::{Tid, TidAllocator},
     },
 };
 
@@ -47,6 +46,7 @@ pub struct Process {
     pid_handle: PidHandle,
 
     state: Mutex<ProcessState>,
+    event_bus: Arc<Mutex<EventBus>>,
 }
 
 pub struct ProcessState {
@@ -68,6 +68,7 @@ impl Process {
         let process = Arc::new(Self {
             pid_handle,
             state: Mutex::new(ProcessState::new(page_set, None)),
+            event_bus: EventBus::new(),
         });
 
         let thread = Arc::new(Thread::new(process.clone(), user_stack_base, true));
@@ -87,6 +88,7 @@ impl Process {
         let child_process = Arc::new(Self {
             pid_handle,
             state: Mutex::new(ProcessState::new(page_set, Some(Arc::downgrade(self)))),
+            event_bus: EventBus::new(),
         });
         self.state().child_list_mut().push(child_process.clone());
 
@@ -97,7 +99,6 @@ impl Process {
         ));
         let trap_context = thread.state().kernel_trap_context_mut();
         trap_context.set_user_register(10, 0);
-
         child_process.state().thread_list_mut().push(thread.clone());
 
         insert_process(child_process.pid(), child_process.clone());
@@ -106,17 +107,17 @@ impl Process {
     }
 
     pub fn exec(self: &Arc<Self>, bin_name: &str, _argument_list: Vec<String>) {
+        info!("{}", bin_name);
         let elf_data = get_bin(bin_name).unwrap();
         let (page_set, user_stack_base, entry_point) = PageSet::from_elf(elf_data);
         self.state().set_page_set(page_set);
 
-        let thread = Arc::new(Thread::new(self.clone(), user_stack_base, true));
+        let thread = self.state().main_thread_mut().clone();
+        thread.reallocate_resource(user_stack_base);
+
         let trap_context = thread.state().kernel_trap_context_mut();
         trap_context.set_user_register(2, usize::from(thread.state().user_stack_top()));
         trap_context.set_user_sepc(usize::from(entry_point));
-        *self.state().main_thread_mut() = thread.clone();
-
-        spawn_thread(thread);
     }
 
     pub fn exit(&self, exit_code: usize) {
@@ -194,7 +195,7 @@ impl ProcessState {
         self.page_set = page_set;
     }
 
-    pub fn allocate_tid(&mut self) -> TidHandle {
+    pub fn allocate_tid(&mut self) -> Tid {
         self.tid_allocator.allocate()
     }
 
