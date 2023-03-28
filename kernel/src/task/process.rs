@@ -38,6 +38,12 @@ pub fn remove_process(pid: Pid) {
     PROCESS_MAP.borrow_mut().remove(&pid);
 }
 
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum Status {
+    Runnable,
+    Zombie,
+}
+
 pub struct Process {
     pid_handle: PidHandle,
 
@@ -45,6 +51,7 @@ pub struct Process {
 }
 
 pub struct ProcessState {
+    status: Status,
     exit_code: usize,
     page_set: PageSet,
     tid_allocator: TidAllocator,
@@ -116,8 +123,10 @@ impl Process {
     }
 
     pub fn exit(&self, exit_code: usize) {
+        self.state().set_status(Status::Zombie);
         self.state().set_exit_code(exit_code);
         self.state().child_list_mut().clear();
+
         remove_process(self.pid());
         info!("process {} exited with {}", self.pid(), exit_code);
     }
@@ -140,7 +149,16 @@ impl ProcessState {
             child_list: Vec::new(),
             thread_list: Vec::new(),
             exit_code: 0,
+            status: Status::Runnable,
         }
+    }
+
+    pub fn status(&self) -> Status {
+        self.status
+    }
+
+    pub fn set_status(&mut self, status: Status) {
+        self.status = status;
     }
 
     pub fn set_exit_code(&mut self, exit_code: usize) {
