@@ -1,0 +1,14 @@
+name: cargo build
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: cargo build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+          targets: riscv64gc-unknown-none-elf
+      - run: make build
