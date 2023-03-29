@@ -1,4 +1,4 @@
-.PHONY: build qemu qemu-gdb clean
+.PHONY: build fmt qemu qemu-gdb clean
 
 build:
 	make -C kernel-lib build
