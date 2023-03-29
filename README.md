@@ -1,5 +1,7 @@
 # `rust-kernel-riscv`
 
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/xiaoyang-sde/rust-kernel-riscv/cargo.yml?branch=master&style=for-the-badge&logo=github)](https://github.com/xiaoyang-sde/rust-kernel-riscv/actions)
+
 `rust-kernel-riscv` is an open-source project that implements an operating system kernel on RISC-V architecture with Rust programming language. The project draws inspiration from several open-source implementations, such as [xv6-riscv](https://github.com/mit-pdos/xv6-riscv) and [zCore](https://github.com/rcore-os/zCore).
 
 - The kernel leverages Rust's asynchronous programming model to schedule threads in both the kernel and user space, which makes context switching more efficient and eliminates the need of allocating a separate kernel stack for each user process.
