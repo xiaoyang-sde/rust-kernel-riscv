@@ -1,6 +1,6 @@
 //! The `syscall` module provides system calls for interacting with the operating system.
 
-use crate::{executor::ControlFlow, task::Thread};
+use crate::{executor::ControlFlow, mem::UserPtr, task::Thread};
 
 mod fs;
 mod process;
@@ -35,14 +35,28 @@ impl<'a> SystemCall<'a> {
         let argument_2 = trap_context.user_register(12);
 
         let (exit_code, control_flow) = match system_call_id {
-            SYSCALL_READ => self.sys_read(argument_0, argument_1 as *const u8, argument_2),
-            SYSCALL_WRITE => self.sys_write(argument_0, argument_1 as *const u8, argument_2),
+            SYSCALL_READ => self.sys_read(
+                argument_0,
+                UserPtr::new(self.thread.satp(), argument_1),
+                argument_2,
+            ),
+            SYSCALL_WRITE => self.sys_write(
+                argument_0,
+                UserPtr::new(self.thread.satp(), argument_1),
+                argument_2,
+            ),
             SYSCALL_EXIT => self.sys_exit(argument_0),
             SYSCALL_SCHED_YIELD => self.sys_sched_yield(),
             SYSCALL_GET_TIME => self.sys_get_time(),
             SYSCALL_FORK => self.sys_fork(),
-            SYSCALL_EXEC => self.sys_exec(argument_0 as *const u8),
-            SYSCALL_WAITPID => self.sys_waitpid(argument_0 as isize, argument_1 as *mut i32),
+            SYSCALL_EXEC => self.sys_exec(UserPtr::new(self.thread.satp(), argument_0)),
+            SYSCALL_WAITPID => {
+                self.sys_waitpid(
+                    argument_0 as isize,
+                    UserPtr::new(self.thread.satp(), argument_1),
+                )
+                .await
+            }
             _ => panic!("unsupported syscall {}", system_call_id),
         };
 

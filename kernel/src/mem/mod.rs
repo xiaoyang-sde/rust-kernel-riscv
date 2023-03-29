@@ -3,11 +3,12 @@ mod frame_allocator;
 mod heap_allocator;
 mod page_table;
 mod segment;
+mod user_ptr;
 
 pub use address::{FrameNumber, PageNumber, PhysicalAddress, VirtualAddress};
 pub use frame_allocator::deallocate_frame;
-pub use page_table::{translate_buffer, translate_string};
 pub use segment::{MapPermission, PageSet, KERNEL_SPACE};
+pub use user_ptr::UserPtr;
 
 pub fn init() {
     heap_allocator::init();

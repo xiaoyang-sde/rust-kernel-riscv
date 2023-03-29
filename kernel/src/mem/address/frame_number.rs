@@ -24,10 +24,7 @@ impl FrameNumber {
     pub fn as_bytes(&self) -> &'static [u8] {
         let physical_address = PhysicalAddress::from(*self);
         unsafe {
-            slice::from_raw_parts(
-                physical_address.as_ptr() as *const u8,
-                PAGE_SIZE / mem::size_of::<u8>(),
-            )
+            slice::from_raw_parts(physical_address.as_ptr(), PAGE_SIZE / mem::size_of::<u8>())
         }
     }
 

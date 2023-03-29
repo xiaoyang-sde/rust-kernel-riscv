@@ -12,7 +12,7 @@ use crate::{
     executor::spawn_thread,
     file::get_bin,
     mem::PageSet,
-    sync::{EventBus, Mutex, MutexGuard},
+    sync::{Event, EventBus, Mutex, MutexGuard},
     task::{
         pid::{allocate_pid, Pid, PidHandle},
         thread::Thread,
@@ -24,15 +24,15 @@ lazy_static! {
     static ref PROCESS_MAP: Mutex<BTreeMap<Pid, Arc<Process>>> = Mutex::new(BTreeMap::new());
 }
 
-pub fn get_process(pid: Pid) -> Option<Arc<Process>> {
+fn get_process(pid: Pid) -> Option<Arc<Process>> {
     PROCESS_MAP.lock().get(&pid).cloned()
 }
 
-pub fn insert_process(pid: Pid, process: Arc<Process>) {
+fn insert_process(pid: Pid, process: Arc<Process>) {
     PROCESS_MAP.lock().insert(pid, process);
 }
 
-pub fn remove_process(pid: Pid) {
+fn remove_process(pid: Pid) {
     PROCESS_MAP.lock().remove(&pid);
 }
 
@@ -125,6 +125,12 @@ impl Process {
         self.state().set_exit_code(exit_code);
         self.state().child_list_mut().clear();
 
+        if let Some(parent) = self.state().parent() {
+            if let Some(parent) = parent.upgrade() {
+                parent.event_bus().lock().push(Event::CHILD_PROCESS_QUIT);
+            }
+        }
+
         remove_process(self.pid());
         info!("process {} exited with {}", self.pid(), exit_code);
     }
@@ -135,6 +141,10 @@ impl Process {
 
     pub fn state(&self) -> MutexGuard<'_, ProcessState> {
         self.state.lock()
+    }
+
+    pub fn event_bus(&self) -> Arc<Mutex<EventBus>> {
+        self.event_bus.clone()
     }
 }
 
@@ -151,12 +161,20 @@ impl ProcessState {
         }
     }
 
+    pub fn parent(&self) -> Option<Weak<Process>> {
+        self.parent.clone()
+    }
+
     pub fn status(&self) -> Status {
         self.status
     }
 
     pub fn set_status(&mut self, status: Status) {
         self.status = status;
+    }
+
+    pub fn exit_code(&self) -> usize {
+        self.exit_code
     }
 
     pub fn set_exit_code(&mut self, exit_code: usize) {

@@ -2,7 +2,13 @@
 
 use alloc::vec::Vec;
 
-use crate::{executor::ControlFlow, mem::translate_string, syscall::SystemCall, task::Status};
+use crate::{
+    executor::ControlFlow,
+    mem::UserPtr,
+    sync::{wait_for_event, Event},
+    syscall::SystemCall,
+    task::Status,
+};
 
 impl SystemCall<'_> {
     /// Exits the current process with an exit code.
@@ -29,27 +35,47 @@ impl SystemCall<'_> {
         (process.pid() as isize, ControlFlow::Continue)
     }
 
-    pub fn sys_waitpid(&self, pid: isize, exit_code: *mut i32) -> (isize, ControlFlow) {
-        let process = self.thread.process();
-        if let Some((index, child_process)) = process
-            .state()
-            .child_list_mut()
-            .iter()
-            .enumerate()
-            .find(|(_, child_process)| pid == -1 || child_process.pid() == pid as usize)
-        {
-            if child_process.state().status() == Status::Zombie {
-                child_process.state().child_list_mut().remove(index);
-                return (0, ControlFlow::Continue);
+    pub async fn sys_waitpid(
+        &self,
+        pid: isize,
+        mut wait_status: UserPtr<usize>,
+    ) -> (isize, ControlFlow) {
+        loop {
+            let process = self.thread.process();
+            let mut process_state = process.state();
+            let child_list = process_state.child_list_mut();
+
+            if let Some((pid, exit_code)) = match pid {
+                -1 | 0 => child_list.iter().find_map(|child_process| {
+                    if child_process.state().status() == Status::Zombie {
+                        Some((child_process.pid(), child_process.state().exit_code()))
+                    } else {
+                        None
+                    }
+                }),
+                pid => child_list.iter().find_map(|child_process| {
+                    if child_process.pid() == pid as usize
+                        && child_process.state().status() == Status::Zombie
+                    {
+                        Some((child_process.pid(), child_process.state().exit_code()))
+                    } else {
+                        None
+                    }
+                }),
+            } {
+                child_list.retain(|child_process| child_process.pid() != pid);
+                *wait_status = exit_code;
+                return (pid as isize, ControlFlow::Continue);
+            } else {
+                let event_bus = process.event_bus();
+                wait_for_event(event_bus.clone(), Event::CHILD_PROCESS_QUIT).await;
+                event_bus.lock().clear(Event::CHILD_PROCESS_QUIT);
             }
-            return (-2, ControlFlow::Continue);
         }
-        (-1, ControlFlow::Continue)
     }
 
-    pub fn sys_exec(&self, path: *const u8) -> (isize, ControlFlow) {
-        let path = translate_string(self.thread.satp(), path);
-        self.thread.process().exec(&path, Vec::new());
+    pub fn sys_exec(&self, path: UserPtr<u8>) -> (isize, ControlFlow) {
+        self.thread.process().exec(&path.as_string(), Vec::new());
         (0, ControlFlow::Continue)
     }
 }

@@ -3,20 +3,16 @@
 //! The page table supports 512 GB of virtual-address space.
 
 #![macro_use]
-use alloc::{string::String, vec, vec::Vec};
+use alloc::{vec, vec::Vec};
 
 use bitflags::bitflags;
 
-use super::PhysicalAddress;
-use crate::{
-    constant::PAGE_SIZE,
-    mem::{
-        address::PageRange,
-        frame_allocator::{allocate_frame, FrameTracker},
-        FrameNumber,
-        PageNumber,
-        VirtualAddress,
-    },
+use crate::mem::{
+    frame_allocator::{allocate_frame, FrameTracker},
+    FrameNumber,
+    PageNumber,
+    PhysicalAddress,
+    VirtualAddress,
 };
 
 bitflags! {
@@ -165,60 +161,4 @@ impl PageTable {
         }
         None
     }
-}
-
-pub fn translate_string(satp: usize, buffer: *const u8) -> String {
-    let page_table = PageTable::from_satp(satp);
-    let mut virtual_address = VirtualAddress::from(buffer as usize);
-    let mut string = String::new();
-    loop {
-        let char_pointer = page_table.translate(virtual_address).unwrap().as_ptr() as *const u8;
-
-        let char = unsafe { *char_pointer as char };
-
-        if char == '\0' {
-            break;
-        }
-        string.push(char);
-        virtual_address += 1;
-    }
-    string
-}
-
-pub fn translate_buffer(satp: usize, buffer: *const u8, length: usize) -> Vec<&'static [u8]> {
-    let page_table = PageTable::from_satp(satp);
-    let mut translated_buffer = Vec::new();
-
-    let buffer_address_start = VirtualAddress::from(buffer as usize);
-    let buffer_address_end = buffer_address_start + length;
-
-    let page_range = PageRange::new(
-        PageNumber::from(buffer_address_start),
-        PageNumber::from(buffer_address_end).offset(1),
-    );
-
-    for (index, page_number) in page_range.iter().enumerate() {
-        let frame_number = page_table
-            .translate_page(page_number)
-            .unwrap()
-            .frame_number();
-        let lower_bound = {
-            if index == 0 {
-                buffer_address_start.page_offset()
-            } else {
-                0
-            }
-        };
-
-        let upper_bound = {
-            if index == page_range.len() - 1 {
-                buffer_address_end.page_offset()
-            } else {
-                PAGE_SIZE
-            }
-        };
-        translated_buffer.push(&frame_number.as_bytes()[lower_bound..upper_bound]);
-    }
-
-    translated_buffer
 }

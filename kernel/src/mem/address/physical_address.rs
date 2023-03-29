@@ -49,6 +49,14 @@ impl PhysicalAddress {
     pub fn as_ptr_mut(&self) -> *mut u8 {
         self.bits as *mut u8
     }
+
+    pub fn as_ref<T>(&self) -> &'static T {
+        unsafe { (self.bits as *const T).as_ref().unwrap() }
+    }
+
+    pub fn as_mut<T>(&self) -> &'static mut T {
+        unsafe { (self.bits as *mut T).as_mut().unwrap() }
+    }
 }
 
 impl Add<usize> for PhysicalAddress {
