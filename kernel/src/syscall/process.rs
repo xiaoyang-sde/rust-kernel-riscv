@@ -68,6 +68,7 @@ impl SystemCall<'_> {
                 return (pid as isize, ControlFlow::Continue);
             } else {
                 let event_bus = process.event_bus();
+                drop(process_state);
                 wait_for_event(event_bus.clone(), Event::CHILD_PROCESS_QUIT).await;
                 event_bus.lock().clear(Event::CHILD_PROCESS_QUIT);
             }

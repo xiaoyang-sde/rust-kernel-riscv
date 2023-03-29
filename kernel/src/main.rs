@@ -38,8 +38,7 @@ pub fn rust_main() {
     timer::enable_timer_interrupt();
     timer::set_trigger();
 
-    let _ = task::Process::new("fork");
-
+    task::init();
     executor::init();
     executor::run_until_complete();
 

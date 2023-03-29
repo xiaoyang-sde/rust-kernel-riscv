@@ -107,7 +107,6 @@ impl Process {
     }
 
     pub fn exec(self: &Arc<Self>, bin_name: &str, _argument_list: Vec<String>) {
-        info!("{}", bin_name);
         let elf_data = get_bin(bin_name).unwrap();
         let (page_set, user_stack_base, entry_point) = PageSet::from_elf(elf_data);
         self.state().set_page_set(page_set);
@@ -123,6 +122,15 @@ impl Process {
     pub fn exit(&self, exit_code: usize) {
         self.state().set_status(Status::Zombie);
         self.state().set_exit_code(exit_code);
+        if self.pid() != 0 {
+            for child_process in self.state().child_list_mut() {
+                let init_process = get_process(0).unwrap();
+                init_process
+                    .state()
+                    .child_list_mut()
+                    .push(child_process.clone());
+            }
+        }
         self.state().child_list_mut().clear();
 
         if let Some(parent) = self.state().parent() {
