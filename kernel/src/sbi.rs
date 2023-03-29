@@ -9,6 +9,7 @@ use core::arch::asm;
 use log::info;
 
 const CONSOLE_PUTCHAR_EXTENSION: usize = 0x01;
+const CONSOLE_GETCHAR_EXTENSION: usize = 0x02;
 const SYSTEM_RESET_EXTENSION: usize = 0x53525354;
 const TIMER_EXTENSION: usize = 0x54494D45;
 
@@ -36,6 +37,12 @@ pub fn set_timer(stime_value: usize) {
 #[inline]
 pub fn console_putchar(char: usize) {
     sbi_call(CONSOLE_PUTCHAR_EXTENSION, 0, char, 0);
+}
+
+#[inline]
+pub fn console_getchar() -> usize {
+    let (value, _) = sbi_call(CONSOLE_GETCHAR_EXTENSION, 0, 0, 0);
+    value.max(0) as usize
 }
 
 /// Put all the harts to shutdown state.
