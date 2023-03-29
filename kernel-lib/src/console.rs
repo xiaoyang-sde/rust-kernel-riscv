@@ -5,7 +5,7 @@ use core::fmt::{self, Write};
 
 use crate::{read, write};
 
-const STDIN: usize = 1;
+const STDIN: usize = 0;
 const STDOUT: usize = 1;
 
 struct Console;
