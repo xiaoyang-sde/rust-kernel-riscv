@@ -22,7 +22,7 @@ pub fn main() -> i32 {
         match char {
             LF | CR => {
                 println!("");
-                if line.len() == 0 {
+                if line.is_empty() {
                     continue;
                 }
                 line.push('\0');
@@ -40,7 +40,7 @@ pub fn main() -> i32 {
                 line.clear();
             }
             BS | DL => {
-                if line.len() == 0 {
+                if line.is_empty() {
                     continue;
                 }
                 print!("{0} {0}", BS as char);

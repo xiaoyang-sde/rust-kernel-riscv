@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use kernel_lib::{exit, fork};
+use kernel_lib::{exit, fork, wait};
 use log::info;
 
 extern crate kernel_lib;
@@ -18,6 +18,11 @@ fn main() -> i32 {
             info!("forked a child process with PID = {}", pid);
         }
         assert!(pid > 0);
+    }
+
+    let mut exit_code: usize = 0;
+    for _ in 0..MAX_CHILD {
+        wait(&mut exit_code);
     }
     return 0;
 }

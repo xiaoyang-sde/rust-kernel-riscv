@@ -66,9 +66,9 @@ pub fn exec(path: &str) -> isize {
     sys_exec(path)
 }
 
-pub fn wait(exit_code: &mut i32) -> isize {
+pub fn wait(exit_code: &mut usize) -> isize {
     loop {
-        match sys_waitpid(-1, exit_code as *mut i32) {
+        match sys_waitpid(-1, exit_code as *mut usize) {
             -2 => {
                 sched_yield();
             }
@@ -77,9 +77,9 @@ pub fn wait(exit_code: &mut i32) -> isize {
     }
 }
 
-pub fn waitpid(pid: usize, exit_code: &mut i32) -> isize {
+pub fn waitpid(pid: usize, exit_code: &mut usize) -> isize {
     loop {
-        match sys_waitpid(pid as isize, exit_code as *mut i32) {
+        match sys_waitpid(pid as isize, exit_code as *mut usize) {
             -2 => {
                 sched_yield();
             }

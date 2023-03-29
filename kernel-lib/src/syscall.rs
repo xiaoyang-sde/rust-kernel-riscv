@@ -50,7 +50,7 @@ pub fn sys_fork() -> isize {
     syscall(SYSCALL_FORK, [0, 0, 0])
 }
 
-pub fn sys_waitpid(pid: isize, exit_code: *mut i32) -> isize {
+pub fn sys_waitpid(pid: isize, exit_code: *mut usize) -> isize {
     syscall(SYSCALL_WAITPID, [pid as usize, exit_code as usize, 0])
 }
 
