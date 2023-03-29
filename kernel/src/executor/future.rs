@@ -29,7 +29,7 @@ use crate::{
 pub enum ControlFlow {
     Continue,
     Yield,
-    Exit,
+    Exit(usize),
 }
 
 /// The `thread_loop` future represents the lifetime of a user thread.
@@ -61,15 +61,15 @@ async fn thread_loop(thread: Arc<Thread>) {
             | scause::Trap::Exception(Exception::LoadFault)
             | scause::Trap::Exception(Exception::LoadPageFault) => {
                 error!("page fault at {:#x}", stval);
-                ControlFlow::Exit
+                ControlFlow::Exit(1)
             }
             scause::Trap::Exception(Exception::IllegalInstruction) => {
                 error!("illegal instruction");
-                ControlFlow::Exit
+                ControlFlow::Exit(1)
             }
             scause::Trap::Exception(Exception::InstructionMisaligned) => {
                 error!("misaligned instruction");
-                ControlFlow::Exit
+                ControlFlow::Exit(1)
             }
             scause::Trap::Interrupt(Interrupt::SupervisorTimer) => {
                 timer::set_trigger();
@@ -83,7 +83,10 @@ async fn thread_loop(thread: Arc<Thread>) {
         match control_flow {
             ControlFlow::Continue => continue,
             ControlFlow::Yield => yield_now().await,
-            ControlFlow::Exit => break,
+            ControlFlow::Exit(exit_code) => {
+                thread.exit(exit_code);
+                break;
+            }
         }
     }
 }
@@ -257,7 +260,7 @@ unsafe extern "C" fn _enter_user_space(trap_context: &mut TrapContext, user_satp
     )
 }
 
-async fn yield_now() {
+pub async fn yield_now() {
     YieldFuture::new().await
 }
 

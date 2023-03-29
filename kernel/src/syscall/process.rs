@@ -13,17 +13,7 @@ use crate::{
 impl SystemCall<'_> {
     /// Exits the current process with an exit code.
     pub fn sys_exit(&self, exit_code: usize) -> (isize, ControlFlow) {
-        let tid = self.thread.tid();
-        let process = self.thread.process();
-        process
-            .state()
-            .thread_list_mut()
-            .retain(|thread| thread.tid() != tid);
-
-        if process.state().thread_list().is_empty() {
-            process.exit(exit_code);
-        }
-        (0, ControlFlow::Exit)
+        (0, ControlFlow::Exit(exit_code))
     }
 
     pub fn sys_sched_yield(&self) -> (isize, ControlFlow) {

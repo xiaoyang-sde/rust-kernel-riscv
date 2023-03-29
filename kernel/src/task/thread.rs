@@ -111,6 +111,10 @@ impl Thread {
         self.process().state().page_set().satp()
     }
 
+    pub fn exit(&self, exit_code: usize) {
+        self.process().exit(exit_code);
+    }
+
     fn deallocate_user_stack(&self) {
         let user_stack_bottom = self.user_stack_base + self.tid() * (PAGE_SIZE + USER_STACK_SIZE);
         self.process()

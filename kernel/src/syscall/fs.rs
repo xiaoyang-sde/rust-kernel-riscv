@@ -4,18 +4,43 @@ use core::str;
 
 use log::error;
 
-use crate::{executor::ControlFlow, mem::UserPtr, print, syscall::SystemCall};
+use crate::{
+    executor::{yield_now, ControlFlow},
+    mem::UserPtr,
+    print,
+    sbi,
+    syscall::SystemCall,
+};
 
+const STDIN: usize = 0;
 const STDOUT: usize = 1;
 
 impl SystemCall<'_> {
-    pub fn sys_read(
+    pub async fn sys_read(
         &self,
-        _fd: usize,
-        _buffer: UserPtr<u8>,
+        fd: usize,
+        mut buffer: UserPtr<u8>,
         _length: usize,
     ) -> (isize, ControlFlow) {
-        (-1, ControlFlow::Continue)
+        match fd {
+            STDIN => {
+                let mut char;
+                loop {
+                    char = sbi::console_getchar();
+                    if char == 0 {
+                        yield_now().await;
+                    } else {
+                        break;
+                    }
+                }
+                *buffer = char as u8;
+                (1, ControlFlow::Continue)
+            }
+            _ => {
+                error!("the file descriptor {} is not supported in 'sys_write'", fd);
+                (-1, ControlFlow::Continue)
+            }
+        }
     }
 
     /// Writes the contents of a buffer to a file descriptor.

@@ -35,11 +35,14 @@ impl<'a> SystemCall<'a> {
         let argument_2 = trap_context.user_register(12);
 
         let (exit_code, control_flow) = match system_call_id {
-            SYSCALL_READ => self.sys_read(
-                argument_0,
-                UserPtr::new(self.thread.satp(), argument_1),
-                argument_2,
-            ),
+            SYSCALL_READ => {
+                self.sys_read(
+                    argument_0,
+                    UserPtr::new(self.thread.satp(), argument_1),
+                    argument_2,
+                )
+                .await
+            }
             SYSCALL_WRITE => self.sys_write(
                 argument_0,
                 UserPtr::new(self.thread.satp(), argument_1),

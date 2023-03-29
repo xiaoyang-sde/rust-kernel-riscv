@@ -131,6 +131,7 @@ impl Process {
                     .push(child_process.clone());
             }
         }
+        self.state().thread_list_mut().clear();
         self.state().child_list_mut().clear();
 
         if let Some(parent) = self.state().parent() {
