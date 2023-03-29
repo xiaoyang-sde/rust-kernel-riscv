@@ -194,10 +194,6 @@ impl ProcessState {
         &mut self.child_list
     }
 
-    pub fn thread_list(&self) -> &Vec<Arc<Thread>> {
-        &self.thread_list
-    }
-
     pub fn thread_list_mut(&mut self) -> &mut Vec<Arc<Thread>> {
         &mut self.thread_list
     }

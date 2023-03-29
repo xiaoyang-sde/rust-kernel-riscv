@@ -163,10 +163,6 @@ impl ThreadState {
         self.user_stack_bottom = user_stack_bottom;
     }
 
-    pub fn user_stack_bottom(&self) -> VirtualAddress {
-        self.user_stack_bottom
-    }
-
     pub fn user_stack_top(&self) -> VirtualAddress {
         self.user_stack_bottom + USER_STACK_SIZE
     }

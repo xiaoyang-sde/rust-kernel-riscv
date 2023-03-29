@@ -37,10 +37,6 @@ impl TaskQueue {
         }
     }
 
-    fn len(&self) -> usize {
-        self.queue.len()
-    }
-
     fn push_back(&mut self, runnable: Runnable) {
         self.queue.push_back(runnable)
     }
