@@ -9,7 +9,7 @@ extern crate kernel_lib;
 #[no_mangle]
 fn main() -> i32 {
     if fork() == 0 {
-        exec("fork\0");
+        exec("shell\0");
     } else {
         loop {
             let mut exit_code = 0;

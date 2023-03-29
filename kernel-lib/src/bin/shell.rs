@@ -15,7 +15,10 @@ const CR: u8 = 0x0du8;
 const DL: u8 = 0x7fu8;
 const BS: u8 = 0x08u8;
 
-pub fn main() -> i32 {
+#[no_mangle]
+fn main() -> i32 {
+    print!("$ ");
+
     let mut line = String::new();
     loop {
         let char = getchar();
@@ -27,17 +30,17 @@ pub fn main() -> i32 {
                 }
                 line.push('\0');
 
-                let pid = fork();
+                let pid = fork() as usize;
                 if pid == 0 {
                     if exec(line.as_str()) == -1 {
                         return -4;
                     }
                 } else {
                     let mut exit_code = 0;
-                    waitpid(pid as usize, &mut exit_code);
-                    info!("exited (pid: {}, exit_code: {})", pid, exit_code);
+                    waitpid(pid, &mut exit_code);
                 }
                 line.clear();
+                print!("$ ");
             }
             BS | DL => {
                 if line.is_empty() {
