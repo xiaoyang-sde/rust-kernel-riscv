@@ -18,6 +18,7 @@ use crate::{
     constant::TRAMPOLINE,
     executor,
     executor::TrapContext,
+    mem::VirtualAddress,
     syscall::SystemCall,
     task::Thread,
     timer,
@@ -60,8 +61,12 @@ async fn thread_loop(thread: Arc<Thread>) {
             | scause::Trap::Exception(Exception::StorePageFault)
             | scause::Trap::Exception(Exception::LoadFault)
             | scause::Trap::Exception(Exception::LoadPageFault) => {
-                error!("page fault at {:#x}", stval);
-                ControlFlow::Exit(1)
+                if thread.clone_frame(VirtualAddress::from(stval)) {
+                    ControlFlow::Continue
+                } else {
+                    error!("page fault at {:#x}", stval);
+                    ControlFlow::Exit(1)
+                }
             }
             scause::Trap::Exception(Exception::IllegalInstruction) => {
                 error!("illegal instruction");

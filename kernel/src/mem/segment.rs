@@ -95,14 +95,6 @@ impl PageSegment {
         &mut self.frame_map
     }
 
-    pub fn map_type(&self) -> MapType {
-        self.map_type
-    }
-
-    pub fn map_permission(&self) -> MapPermission {
-        self.map_permission
-    }
-
     /// Maps the range of pages represented with `page_range` to frames in the `page_table`.
     pub fn map_range(&mut self, page_table: &mut PageTable) {
         for page_number in self.page_range.iter() {
@@ -180,7 +172,7 @@ impl PageSet {
         page_set_clone.page_table.map(
             PageNumber::from(VirtualAddress::from(TRAMPOLINE)),
             FrameNumber::from(PhysicalAddress::from(trampoline_start as usize)),
-            PTEFlags::R | PTEFlags::X,
+            PTEFlags::R | PTEFlags::W | PTEFlags::X,
         );
 
         let mut page_mappings = Vec::new();
@@ -203,8 +195,11 @@ impl PageSet {
                 page_set_clone.push_mapped(page_segment_clone, None);
                 for page_number in page_segment.page_range().iter() {
                     let pte = page_set.page_table.translate_page(page_number).unwrap();
-                    let pte_flags = pte.flags() & !PTEFlags::W | PTEFlags::COW;
                     let frame_number = pte.frame_number();
+
+                    let mut pte_flags = pte.flags();
+                    pte_flags.remove(PTEFlags::W);
+                    pte_flags.insert(PTEFlags::COW);
                     page_mappings.push((page_number, frame_number, pte_flags));
                 }
             }
@@ -236,6 +231,38 @@ impl PageSet {
         self.page_table.translate_page(page_number)
     }
 
+    pub fn clone_frame(&mut self, virtual_address: VirtualAddress) -> bool {
+        let page_number = PageNumber::from(virtual_address);
+        let pte = self.page_table.translate_page(page_number).unwrap();
+        if pte.is_cow() {
+            if let Some(page_segment) = self.find_segment_mut(virtual_address) {
+                let source_frame_tracker = page_segment.frame_map().get(&page_number).unwrap();
+                let source_frame = source_frame_tracker.frame_number();
+                let mut pte_flags = pte.flags();
+                pte_flags.insert(PTEFlags::W);
+                pte_flags.remove(PTEFlags::COW);
+
+                if Arc::strong_count(source_frame_tracker) == 1 {
+                    self.page_table.map(page_number, source_frame, pte_flags);
+                } else {
+                    let destination_frame_tracker = allocate_frame().unwrap();
+                    let destination_frame = destination_frame_tracker.frame_number();
+                    destination_frame
+                        .as_bytes_mut()
+                        .clone_from_slice(source_frame.as_bytes());
+                    page_segment
+                        .frame_map_mut()
+                        .insert(page_number, Arc::new(destination_frame_tracker));
+                    self.page_table
+                        .map(page_number, destination_frame, pte_flags);
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn push(&mut self, mut segment: PageSegment, bytes: Option<&[u8]>) {
         segment.map_range(&mut self.page_table);
         if let Some(bytes) = bytes {
@@ -265,6 +292,13 @@ impl PageSet {
             PageSegment::new(start_address, end_address, MapType::Framed, map_permission),
             None,
         );
+    }
+
+    pub fn find_segment_mut(&mut self, address: VirtualAddress) -> Option<&mut PageSegment> {
+        self.segment_list.iter_mut().find(|segment| {
+            VirtualAddress::from(segment.start()) <= address
+                && address < VirtualAddress::from(segment.end())
+        })
     }
 
     /// Removes a [PageSegment] that contains a specific [VirtualAddress].

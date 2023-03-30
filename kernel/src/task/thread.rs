@@ -111,6 +111,13 @@ impl Thread {
         self.process().state().page_set().satp()
     }
 
+    pub fn clone_frame(&self, virtual_address: VirtualAddress) -> bool {
+        self.process()
+            .state()
+            .page_set_mut()
+            .clone_frame(virtual_address)
+    }
+
     pub fn exit(&self, exit_code: usize) {
         self.process().exit(exit_code);
     }
