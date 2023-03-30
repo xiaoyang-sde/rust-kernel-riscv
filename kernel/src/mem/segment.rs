@@ -198,8 +198,10 @@ impl PageSet {
                     let frame_number = pte.frame_number();
 
                     let mut pte_flags = pte.flags();
-                    pte_flags.remove(PTEFlags::W);
-                    pte_flags.insert(PTEFlags::COW);
+                    if pte.is_writable() {
+                        pte_flags.remove(PTEFlags::W);
+                        pte_flags.insert(PTEFlags::COW);
+                    }
                     page_mappings.push((page_number, frame_number, pte_flags));
                 }
             }

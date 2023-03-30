@@ -57,10 +57,11 @@ async fn thread_loop(thread: Arc<Thread>) {
             scause::Trap::Exception(Exception::UserEnvCall) => {
                 SystemCall::new(&thread).execute().await
             }
-            scause::Trap::Exception(Exception::StoreFault)
-            | scause::Trap::Exception(Exception::StorePageFault)
-            | scause::Trap::Exception(Exception::LoadFault)
-            | scause::Trap::Exception(Exception::LoadPageFault) => {
+            scause::Trap::Exception(Exception::LoadPageFault) => {
+                error!("page fault at {:#x}", stval);
+                ControlFlow::Exit(1)
+            }
+            scause::Trap::Exception(Exception::StorePageFault) => {
                 if thread.clone_frame(VirtualAddress::from(stval)) {
                     ControlFlow::Continue
                 } else {
