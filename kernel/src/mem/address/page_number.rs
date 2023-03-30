@@ -66,6 +66,7 @@ impl From<VirtualAddress> for PageNumber {
 
 /// The `PageRange` struct represents a range of page numbers,
 /// with `start` and `end` field holding [PageNumber] values.
+#[derive(Clone)]
 pub struct PageRange {
     start: PageNumber,
     end: PageNumber,

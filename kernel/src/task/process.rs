@@ -84,7 +84,7 @@ impl Process {
 
     pub fn fork(self: &Arc<Self>) -> Arc<Self> {
         let pid_handle = allocate_pid();
-        let page_set = PageSet::clone_from(self.state().page_set());
+        let page_set = PageSet::clone_from(self.state().page_set_mut());
         let child_process = Arc::new(Self {
             pid_handle,
             state: Mutex::new(ProcessState::new(page_set, Some(Arc::downgrade(self)))),

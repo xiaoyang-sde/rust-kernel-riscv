@@ -34,7 +34,7 @@ impl Thread {
             );
         }
 
-        let trap_context_bottom = VirtualAddress::from(TRAP_CONTEXT_BASE) - tid * PAGE_SIZE;
+        let trap_context_bottom = VirtualAddress::from(TRAP_CONTEXT_BASE) + tid * PAGE_SIZE;
         let trap_context_top = trap_context_bottom + PAGE_SIZE;
         if allocate_resource {
             process.state().page_set_mut().insert_frame(
@@ -73,7 +73,7 @@ impl Thread {
         );
         self.state().set_user_stack_bottom(user_stack_bottom);
 
-        let trap_context_bottom = VirtualAddress::from(TRAP_CONTEXT_BASE) - self.tid() * PAGE_SIZE;
+        let trap_context_bottom = VirtualAddress::from(TRAP_CONTEXT_BASE) + self.tid() * PAGE_SIZE;
         let trap_context_top = trap_context_bottom + PAGE_SIZE;
         self.process().state().page_set_mut().insert_frame(
             trap_context_bottom,
@@ -124,7 +124,7 @@ impl Thread {
     }
 
     fn deallocate_trap_context(&self) {
-        let trap_context_bottom = VirtualAddress::from(TRAP_CONTEXT_BASE) - self.tid() * PAGE_SIZE;
+        let trap_context_bottom = VirtualAddress::from(TRAP_CONTEXT_BASE) + self.tid() * PAGE_SIZE;
         self.process()
             .state()
             .page_set_mut()

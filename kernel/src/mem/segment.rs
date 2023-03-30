@@ -7,7 +7,7 @@ use riscv::register::satp;
 use xmas_elf::{program::Type, ElfFile};
 
 use crate::{
-    constant::{MEM_LIMIT, PAGE_SIZE, TRAMPOLINE},
+    constant::{MEM_LIMIT, PAGE_SIZE, TRAMPOLINE, TRAP_CONTEXT_BASE},
     mem::{
         address::PageRange,
         frame_allocator::{allocate_frame, FrameTracker},
@@ -28,7 +28,7 @@ pub enum MapType {
 
 bitflags! {
   #[derive(Clone, Copy)]
-  pub struct MapPermission: u8 {
+  pub struct MapPermission: usize {
       const R = 1 << 1;
       const W = 1 << 2;
       const X = 1 << 3;
@@ -52,9 +52,10 @@ extern "C" {
 /// The `PageSegment` struct represents a consecutive range of pages,
 /// which are mapped to frames in the same method (`Identical` or `Framed`)
 /// and have the same permissions.
+#[derive(Clone)]
 pub struct PageSegment {
     page_range: PageRange,
-    frame_map: BTreeMap<PageNumber, FrameTracker>,
+    frame_map: BTreeMap<PageNumber, Arc<FrameTracker>>,
     map_type: MapType,
     map_permission: MapPermission,
 }
@@ -74,15 +75,6 @@ impl PageSegment {
         }
     }
 
-    pub fn clone_from(page_segment: &Self) -> Self {
-        Self {
-            page_range: PageRange::new(page_segment.start(), page_segment.end()),
-            frame_map: BTreeMap::new(),
-            map_type: page_segment.map_type(),
-            map_permission: page_segment.map_permission(),
-        }
-    }
-
     pub fn start(&self) -> PageNumber {
         self.page_range.start()
     }
@@ -93,6 +85,14 @@ impl PageSegment {
 
     pub fn page_range(&self) -> &PageRange {
         &self.page_range
+    }
+
+    pub fn frame_map(&self) -> &BTreeMap<PageNumber, Arc<FrameTracker>> {
+        &self.frame_map
+    }
+
+    pub fn frame_map_mut(&mut self) -> &mut BTreeMap<PageNumber, Arc<FrameTracker>> {
+        &mut self.frame_map
     }
 
     pub fn map_type(&self) -> MapType {
@@ -124,7 +124,7 @@ impl PageSegment {
             MapType::Framed => {
                 let frame = allocate_frame().unwrap();
                 let frame_number = frame.frame_number();
-                self.frame_map.insert(page_number, frame);
+                self.frame_map.insert(page_number, Arc::new(frame));
                 frame_number
             }
         };
@@ -175,7 +175,7 @@ impl PageSet {
         }
     }
 
-    pub fn clone_from(page_set: &Self) -> Self {
+    pub fn clone_from(page_set: &mut Self) -> Self {
         let mut page_set_clone = Self::new();
         page_set_clone.page_table.map(
             PageNumber::from(VirtualAddress::from(TRAMPOLINE)),
@@ -183,20 +183,40 @@ impl PageSet {
             PTEFlags::R | PTEFlags::X,
         );
 
-        for page_segment in page_set.segment_list() {
-            let page_segment_clone = PageSegment::clone_from(page_segment);
-            page_set_clone.push(page_segment_clone, None);
+        let mut page_mappings = Vec::new();
+        for page_segment in page_set.segment_list().iter() {
+            let page_segment_clone = page_segment.clone();
 
-            for page_number in page_segment.page_range().iter() {
-                let source = page_set.translate(page_number).unwrap().frame_number();
-                let destination = page_set_clone
-                    .translate(page_number)
-                    .unwrap()
-                    .frame_number();
-                destination
-                    .as_bytes_mut()
-                    .clone_from_slice(source.as_bytes());
+            if page_segment_clone.start() >= PageNumber::from(TRAP_CONTEXT_BASE) {
+                page_set_clone.push(page_segment_clone, None);
+                for page_number in page_segment.page_range().iter() {
+                    let source = page_set.translate(page_number).unwrap().frame_number();
+                    let destination = page_set_clone
+                        .translate(page_number)
+                        .unwrap()
+                        .frame_number();
+                    destination
+                        .as_bytes_mut()
+                        .clone_from_slice(source.as_bytes());
+                }
+            } else {
+                page_set_clone.push_mapped(page_segment_clone, None);
+                for page_number in page_segment.page_range().iter() {
+                    let pte = page_set.page_table.translate_page(page_number).unwrap();
+                    let pte_flags = pte.flags() & !PTEFlags::W | PTEFlags::COW;
+                    let frame_number = pte.frame_number();
+                    page_mappings.push((page_number, frame_number, pte_flags));
+                }
             }
+        }
+
+        for (page_number, frame_number, pte_flags) in page_mappings {
+            page_set
+                .page_table
+                .map(page_number, frame_number, pte_flags);
+            page_set_clone
+                .page_table
+                .map(page_number, frame_number, pte_flags);
         }
         page_set_clone
     }
@@ -218,6 +238,13 @@ impl PageSet {
 
     pub fn push(&mut self, mut segment: PageSegment, bytes: Option<&[u8]>) {
         segment.map_range(&mut self.page_table);
+        if let Some(bytes) = bytes {
+            segment.clone_bytes(&mut self.page_table, bytes);
+        }
+        self.segment_list.push(segment);
+    }
+
+    pub fn push_mapped(&mut self, mut segment: PageSegment, bytes: Option<&[u8]>) {
         if let Some(bytes) = bytes {
             segment.clone_bytes(&mut self.page_table, bytes);
         }

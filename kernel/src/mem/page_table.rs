@@ -16,7 +16,8 @@ use crate::mem::{
 };
 
 bitflags! {
-    pub struct PTEFlags: u8 {
+    #[derive(Copy, Clone)]
+    pub struct PTEFlags: usize {
         const V = 1 << 0;
         const R = 1 << 1;
         const W = 1 << 2;
@@ -25,6 +26,7 @@ bitflags! {
         const G = 1 << 5;
         const A = 1 << 6;
         const D = 1 << 7;
+        const COW = 1 << 8;
     }
 }
 
@@ -37,7 +39,7 @@ pub struct PageTableEntry {
 impl PageTableEntry {
     pub fn new(frame_number: FrameNumber, flag: PTEFlags) -> Self {
         PageTableEntry {
-            bits: usize::from(frame_number) << 10 | flag.bits() as usize,
+            bits: usize::from(frame_number) << 10 | flag.bits(),
         }
     }
 
@@ -46,7 +48,7 @@ impl PageTableEntry {
     }
 
     pub fn flags(&self) -> PTEFlags {
-        PTEFlags::from_bits(self.bits as u8).unwrap()
+        PTEFlags::from_bits(self.bits & ((1 << 10) - 1)).unwrap()
     }
 
     pub fn is_valid(&self) -> bool {
@@ -63,6 +65,10 @@ impl PageTableEntry {
 
     pub fn is_executable(&self) -> bool {
         self.flags().contains(PTEFlags::X)
+    }
+
+    pub fn is_cow(&self) -> bool {
+        self.flags().contains(PTEFlags::COW)
     }
 }
 
