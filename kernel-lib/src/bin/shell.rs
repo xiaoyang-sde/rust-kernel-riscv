@@ -3,7 +3,7 @@
 
 use alloc::string::String;
 
-use kernel_lib::{console::getchar, exec, fork, waitpid};
+use kernel_lib::{console::getchar, exec, exit, fork, waitpid};
 
 extern crate alloc;
 #[macro_use]
@@ -26,20 +26,22 @@ fn main() -> i32 {
                 println!("");
                 if line.is_empty() {
                     continue;
-                }
-                line.push('\0');
-
-                let pid = fork() as usize;
-                if pid == 0 {
-                    if exec(line.as_str()) == -1 {
-                        return -4;
-                    }
+                } else if line == "exit" {
+                    exit(0);
                 } else {
-                    let mut exit_code = 0;
-                    waitpid(pid, &mut exit_code);
+                    let pid = fork() as usize;
+                    if pid == 0 {
+                        line.push('\0');
+                        if exec(line.as_str()) == -1 {
+                            return -4;
+                        }
+                    } else {
+                        let mut exit_code = 0;
+                        waitpid(pid, &mut exit_code);
+                    }
+                    line.clear();
+                    print!("$ ");
                 }
-                line.clear();
-                print!("$ ");
             }
             BS | DL => {
                 if line.is_empty() {
