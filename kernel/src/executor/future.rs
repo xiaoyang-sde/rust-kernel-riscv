@@ -181,7 +181,7 @@ unsafe extern "C" fn _enter_kernel_space() {
         "ld s11, 14 * 8(sp)",
         // deallocate 15 words on the kernel stack
         "addi sp, sp, 15 * 8",
-        "jr ra",
+        "ret",
         options(noreturn)
     )
 }
