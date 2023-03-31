@@ -9,12 +9,12 @@ use lazy_static::lazy_static;
 use log::info;
 
 use crate::{
-    executor::spawn_thread,
-    file::get_bin,
+    executor,
+    file,
     mem::PageSet,
-    sync::{Event, EventBus, Mutex, MutexGuard},
+    sync::{Event, EventBus, Mutex},
     task::{
-        pid::{allocate_pid, Pid, PidHandle},
+        pid::{self, Pid, PidHandle},
         thread::Thread,
         tid::{Tid, TidAllocator},
     },
@@ -60,11 +60,12 @@ pub struct ProcessState {
 }
 
 impl Process {
+    /// Creates a process with a main thread that runs a specific executable file.
     pub fn new(bin_name: &str) -> Arc<Self> {
-        let elf_data = get_bin(bin_name).unwrap();
+        let elf_data = file::get_bin(bin_name).unwrap();
         let (page_set, user_stack_base, entry_point) = PageSet::from_elf(elf_data);
 
-        let pid_handle = allocate_pid();
+        let pid_handle = pid::allocate_pid();
         let process = Arc::new(Self {
             pid_handle,
             state: Mutex::new(ProcessState::new(page_set, None)),
@@ -72,69 +73,89 @@ impl Process {
         });
 
         let thread = Arc::new(Thread::new(process.clone(), user_stack_base, true));
-        let trap_context = thread.state().kernel_trap_context_mut();
-        trap_context.set_user_register(2, usize::from(thread.state().user_stack_top()));
+        let thread_state = thread.state().lock();
+        let trap_context = thread_state.kernel_trap_context_mut();
+        trap_context.set_user_register(2, usize::from(thread_state.user_stack_top()));
         trap_context.set_user_sepc(usize::from(entry_point));
-        process.state().thread_list_mut().push(thread.clone());
+        drop(thread_state);
 
+        process
+            .state()
+            .lock()
+            .thread_list_mut()
+            .push(thread.clone());
         insert_process(process.pid(), process.clone());
-        spawn_thread(thread);
+        executor::spawn_thread(thread);
         process
     }
 
+    /// Forks the current process and create a new child process.
     pub fn fork(self: &Arc<Self>) -> Arc<Self> {
-        let pid_handle = allocate_pid();
-        let page_set = PageSet::clone_from(self.state().page_set_mut());
+        let pid_handle = pid::allocate_pid();
+
+        let mut process_state = self.state().lock();
+        let page_set = PageSet::clone_from(process_state.page_set_mut());
+
         let child_process = Arc::new(Self {
             pid_handle,
             state: Mutex::new(ProcessState::new(page_set, Some(Arc::downgrade(self)))),
             event_bus: EventBus::new(),
         });
-        self.state().child_list_mut().push(child_process.clone());
+        process_state.child_list_mut().push(child_process.clone());
 
-        let thread = Arc::new(Thread::new(
-            child_process.clone(),
-            self.state().main_thread().user_stack_base(),
-            false,
-        ));
-        let trap_context = thread.state().kernel_trap_context_mut();
+        let user_stack_base = process_state.main_thread().user_stack_base();
+        drop(process_state);
+
+        let thread = Arc::new(Thread::new(child_process.clone(), user_stack_base, false));
+        let trap_context = thread.state().lock().kernel_trap_context_mut();
         trap_context.set_user_register(10, 0);
-        child_process.state().thread_list_mut().push(thread.clone());
+        child_process
+            .state()
+            .lock()
+            .thread_list_mut()
+            .push(thread.clone());
 
         insert_process(child_process.pid(), child_process.clone());
-        spawn_thread(thread);
+        executor::spawn_thread(thread);
         child_process
     }
 
+    /// Replaces the current process with a new process loaded from the executable file with a given
+    /// name.
     pub fn exec(self: &Arc<Self>, bin_name: &str, _argument_list: Vec<String>) {
-        let elf_data = get_bin(bin_name).unwrap();
+        let elf_data = file::get_bin(bin_name).unwrap();
         let (page_set, user_stack_base, entry_point) = PageSet::from_elf(elf_data);
-        self.state().set_page_set(page_set);
 
-        let thread = self.state().main_thread_mut().clone();
+        let mut process_state = self.state().lock();
+        process_state.set_page_set(page_set);
+        let thread = process_state.main_thread_mut().clone();
+        drop(process_state);
+
         thread.reallocate_resource(user_stack_base);
-
-        let trap_context = thread.state().kernel_trap_context_mut();
-        trap_context.set_user_register(2, usize::from(thread.state().user_stack_top()));
+        let thread_state = thread.state().lock();
+        let trap_context = thread_state.kernel_trap_context_mut();
+        trap_context.set_user_register(2, usize::from(thread_state.user_stack_top()));
         trap_context.set_user_sepc(usize::from(entry_point));
     }
 
+    /// Terminates the current thread with the given exit code.
     pub fn exit(&self, exit_code: usize) {
-        self.state().set_status(Status::Zombie);
-        self.state().set_exit_code(exit_code);
+        let mut process_state = self.state().lock();
+        process_state.set_status(Status::Zombie);
+        process_state.set_exit_code(exit_code);
         if self.pid() != 0 {
-            for child_process in self.state().child_list_mut() {
-                let init_process = get_process(0).unwrap();
-                init_process
-                    .state()
+            let init_process = get_process(0).unwrap();
+            let mut init_process_state = init_process.state().lock();
+            for child_process in process_state.child_list_mut() {
+                init_process_state
                     .child_list_mut()
                     .push(child_process.clone());
             }
         }
-        self.state().thread_list_mut().clear();
-        self.state().child_list_mut().clear();
+        process_state.thread_list_mut().clear();
+        process_state.child_list_mut().clear();
 
-        if let Some(parent) = self.state().parent() {
+        if let Some(parent) = process_state.parent() {
             if let Some(parent) = parent.upgrade() {
                 parent.event_bus().lock().push(Event::CHILD_PROCESS_QUIT);
             }
@@ -148,8 +169,8 @@ impl Process {
         self.pid_handle.pid()
     }
 
-    pub fn state(&self) -> MutexGuard<'_, ProcessState> {
-        self.state.lock()
+    pub fn state(&self) -> &Mutex<ProcessState> {
+        &self.state
     }
 
     pub fn event_bus(&self) -> Arc<Mutex<EventBus>> {
