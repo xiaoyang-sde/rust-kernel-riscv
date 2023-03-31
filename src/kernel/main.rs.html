@@ -69,6 +69,8 @@
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
 </pre><pre class="rust"><code><span class="doccomment">//! `rust-kernel-riscv` is an open-source project that implements an operating system kernel on RISC-V architecture with Rust programming language. The project draws inspiration from several open-source implementations, such as [xv6-riscv](https://github.com/mit-pdos/xv6-riscv) and [zCore](https://github.com/rcore-os/zCore).
 //!
 //! - The kernel leverages Rust&#39;s asynchronous programming model to schedule threads in both the
@@ -113,11 +115,13 @@
     clear_bss();
     logging::init();
 
-    <span class="macro">info!</span>(<span class="string">&quot;rust-kernel has booted&quot;</span>);
     mem::init();
 
     timer::enable_timer_interrupt();
     timer::set_trigger();
+
+    <span class="macro">info!</span>(<span class="string">&quot;rust-kernel has booted&quot;</span>);
+    file::print_bin_name();
 
     task::init();
     executor::init();

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["__stability","__static_ref_initialize","_bin_address","_bin_count","_bin_name","get_bin","get_bin_count","get_bin_data"],"static":["LAZY"],"struct":["BIN_NAME_LIST"]};
+window.SIDEBAR_ITEMS = {"fn":["__stability","__static_ref_initialize","_bin_address","_bin_count","_bin_name","get_bin","get_bin_count","get_bin_data","print_bin_name"],"static":["LAZY"],"struct":["BIN_NAME_LIST"]};
