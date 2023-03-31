@@ -42,11 +42,13 @@ pub fn rust_main() {
     clear_bss();
     logging::init();
 
-    info!("rust-kernel has booted");
     mem::init();
 
     timer::enable_timer_interrupt();
     timer::set_trigger();
+
+    info!("rust-kernel has booted");
+    file::print_bin_name();
 
     task::init();
     executor::init();

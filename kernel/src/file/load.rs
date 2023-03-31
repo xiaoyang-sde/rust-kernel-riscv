@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use log::info;
 use core::{slice, str};
 
 use lazy_static::lazy_static;
@@ -51,4 +52,17 @@ pub fn get_bin_data(bin_index: usize) -> &'static [u8] {
             bin_address_end - bin_address_start,
         )
     }
+}
+
+pub fn print_bin_name() {
+    let bin_count = get_bin_count();
+    let mut bin_name_list = Vec::new();
+    for bin_index in 0..bin_count {
+        let bin_name = BIN_NAME_LIST[bin_index];
+        if bin_name == "init" {
+            continue;
+        }
+        bin_name_list.push(bin_name);
+    }
+    info!("built-in binaries: {}", bin_name_list.join(", "));
 }
