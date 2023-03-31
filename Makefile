@@ -1,4 +1,4 @@
-.PHONY: build fmt qemu qemu-gdb clean
+.PHONY: build fmt doc qemu qemu-gdb clean
 
 build:
 	make -C kernel-lib build
@@ -7,6 +7,9 @@ build:
 fmt:
 	make -C kernel fmt
 	make -C kernel-lib fmt
+
+doc:
+	make -C kernel doc
 
 qemu: build
 	make -C kernel qemu
