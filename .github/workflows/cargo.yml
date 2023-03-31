@@ -35,5 +35,5 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: kernel/target/riscv64gc-unknown-none-elf/doc/kernel
+          publish_dir: kernel/target/riscv64gc-unknown-none-elf/doc
           publish_branch: gh-pages
