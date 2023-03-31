@@ -1,22 +1,34 @@
-.PHONY: build fmt doc qemu qemu-gdb clean
+.PHONY: build fmt doc qemu qemu-gdb gdb clean
 
 build:
-	make -C kernel-lib build
-	make -C kernel build
+	cargo build
 
 fmt:
-	make -C kernel fmt
-	make -C kernel-lib fmt
+	cargo fmt
 
 doc:
-	make -C kernel doc
+	cargo doc --no-deps --bin kernel --lib
 
 qemu: build
-	make -C kernel qemu
+	qemu-system-riscv64 \
+    -machine virt \
+    -nographic \
+    -bios bootloader/opensbi-jump.bin \
+    -device loader,file=target/riscv64gc-unknown-none-elf/debug/kernel,addr=0x80200000
 
 qemu-gdb: build
-	make -C kernel qemu-gdb
+	qemu-system-riscv64 \
+    -machine virt \
+    -nographic \
+    -bios bootloader/opensbi-jump.bin \
+    -device loader,file=target/riscv64gc-unknown-none-elf/debug/kernel,addr=0x80200000 \
+    -s -S
+
+gdb:
+	riscv64-unknown-elf-gdb \
+    -ex 'file target/riscv64gc-unknown-none-elf/debug/kernel' \
+    -ex 'set arch riscv:rv64' \
+    -ex 'target remote localhost:1234'
 
 clean:
-	make -C kernel-lib clean
-	make -C kernel clean
+	cargo clean

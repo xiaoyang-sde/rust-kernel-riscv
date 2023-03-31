@@ -1,0 +1,11 @@
+[unstable]
+profile-rustflags = true
+
+[build]
+target = "riscv64gc-unknown-none-elf"
+
+[profile.dev.package.kernel]
+rustflags = ["-C", "link-arg=-Tkernel/src/linker.ld"]
+
+[profile.dev.package.kernel-lib]
+rustflags = ["-C", "link-arg=-Tkernel-lib/src/linker.ld"]
