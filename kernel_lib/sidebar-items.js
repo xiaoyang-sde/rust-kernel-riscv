@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["_start","exec","exit","fork","get_time","read","sched_yield","wait","waitpid","write"],"macro":["print","println"],"mod":["console"]};

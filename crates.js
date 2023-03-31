@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["kernel"];
+window.ALL_CRATES = ["kernel","kernel_lib"];
