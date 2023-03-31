@@ -11,20 +11,23 @@ use crate::{
 };
 
 impl SystemCall<'_> {
-    /// Exits the current process with an exit code.
+    /// Terminate the current thread with the given exit code.
     pub fn sys_exit(&self, exit_code: usize) -> (isize, ControlFlow) {
         (0, ControlFlow::Exit(exit_code))
     }
 
+    /// Yield the CPU to another thread.
     pub fn sys_sched_yield(&self) -> (isize, ControlFlow) {
         (0, ControlFlow::Yield)
     }
 
+    /// Fork the current process and create a new child process.
     pub fn sys_fork(&self) -> (isize, ControlFlow) {
         let process = self.thread.process().fork();
         (process.pid() as isize, ControlFlow::Continue)
     }
 
+    /// Wait for a child process with the given process to terminate, and return the PID and exit.
     pub async fn sys_waitpid(
         &self,
         pid: isize,
@@ -65,6 +68,8 @@ impl SystemCall<'_> {
         }
     }
 
+    /// Replace the current process with a new process loaded from the executable file with a given
+    /// name.
     pub fn sys_exec(&self, path: UserPtr<u8>) -> (isize, ControlFlow) {
         self.thread.process().exec(&path.as_string(), Vec::new());
         (0, ControlFlow::Continue)

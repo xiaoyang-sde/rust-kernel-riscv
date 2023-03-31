@@ -15,11 +15,13 @@ const SYSCALL_FORK: usize = 220;
 const SYSCALL_EXEC: usize = 221;
 const SYSCALL_WAITPID: usize = 260;
 
+/// The `SystemCall` struct provides an interface for invoking system calls on a given thread.
 pub struct SystemCall<'a> {
     thread: &'a Thread,
 }
 
 impl<'a> SystemCall<'a> {
+    /// Constructs a new `SystemCall` instance with the given thread.
     pub fn new(thread: &'a Thread) -> Self {
         Self { thread }
     }
@@ -27,6 +29,8 @@ impl<'a> SystemCall<'a> {
     /// Invokes a system call with the given arguments.
     pub async fn execute(&mut self) -> ControlFlow {
         let trap_context = self.thread.state().kernel_trap_context_mut();
+
+        // Increment the program counter to skip the `ecall` instruction
         trap_context.set_user_sepc(trap_context.user_sepc() + 4);
 
         let system_call_id = trap_context.user_register(17);

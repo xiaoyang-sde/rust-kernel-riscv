@@ -16,6 +16,7 @@ const STDIN: usize = 0;
 const STDOUT: usize = 1;
 
 impl SystemCall<'_> {
+    /// Reads the content from a file descriptor and writes them to a buffer.
     pub async fn sys_read(
         &self,
         fd: usize,

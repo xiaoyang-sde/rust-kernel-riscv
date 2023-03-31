@@ -5,6 +5,8 @@ use core::fmt::{self, Write};
 
 use crate::sbi;
 
+/// The `Console` struct implements the [Write] trait, which invokes the [sbi::console_putchar]
+/// function.
 struct Console;
 
 impl Write for Console {
