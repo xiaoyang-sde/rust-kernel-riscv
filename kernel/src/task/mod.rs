@@ -1,3 +1,5 @@
+//! The `task` module provides types for representing processes and threads.
+
 mod pid;
 mod process;
 mod thread;
@@ -10,9 +12,10 @@ pub use process::{Process, Status};
 pub use thread::Thread;
 
 lazy_static! {
-    pub static ref INIT_PROCESS: Arc<Process> = Process::new("init");
+    static ref INIT_PROCESS: Arc<Process> = Process::new("init");
 }
 
+/// Spawns the init process.
 pub fn init() {
     initialize(&INIT_PROCESS);
 }

@@ -37,18 +37,19 @@ pub enum ControlFlow {
 async fn thread_loop(thread: Arc<Thread>) {
     // There are two mappings of the _enter_user_space function in the kernel page table.
     // The first mapping is included in the identical mapping for all physical addresses,
-    // While the second mapping is included in the `TRAMPOLINE` page.
+    // while the second mapping is included in the `TRAMPOLINE` page.
     // When invoking the `_enter_user_space` function, the second mapping should be used
     // because it is also mapped in the user space, ensuring that the CPU can continue executing
     // at the same address after switching to the user space page table.
-    // The function pointer is cast to the `fn(&mut TrapContext, usize)` type to ensure proper
-    // calling convention.
+
+    // The function pointer `_enter_user_space` is cast to the `fn(&mut TrapContext, usize)` type
+    // to ensure proper calling convention.
     let _enter_user_space: fn(&mut TrapContext, usize) = {
         unsafe { transmute(_enter_user_space as usize - _enter_kernel_space as usize + TRAMPOLINE) }
     };
 
     loop {
-        let trap_context = thread.state().user_trap_context_mut();
+        let trap_context = thread.state().lock().user_trap_context_mut();
         _enter_user_space(trap_context, thread.satp());
 
         let scause = scause::read();
@@ -108,10 +109,10 @@ pub fn spawn_thread(thread: Arc<Thread>) {
 unsafe extern "C" fn _enter_kernel_space() {
     asm!(
         ".p2align 2",
-        // Read the address of `trap_context` from sscratch
+        // Reads the address of `trap_context` from sscratch
         // and store the user stack pointer to sscratch
         "csrrw sp, sscratch, sp",
-        // Store the registers to `trap_context.user_register`
+        // Stores the registers to `trap_context.user_register`
         "sd zero, 0 * 8(sp)",
         "sd ra, 1 * 8(sp)",
         "sd gp, 3 * 8(sp)",
@@ -143,29 +144,29 @@ unsafe extern "C" fn _enter_kernel_space() {
         "sd t4, 29 * 8(sp)",
         "sd t5, 30 * 8(sp)",
         "sd t6, 31 * 8(sp)",
-        // Save sstatus to `trap_context.user_sstatus`
+        // Saves sstatus to `trap_context.user_sstatus`
         "csrr t0, sstatus",
         "sd t0, 32 * 8(sp)",
-        // Save sepc to `trap_context.user_sepc`
+        // Saves sepc to `trap_context.user_sepc`
         "csrr t1, sepc",
         "sd  t1, 33 * 8(sp)",
-        // Store the address of `trap_context` to sscratch
+        // Stores the address of `trap_context` to sscratch
         // and read the user stack pointer to t2
         "csrrw t2, sscratch, sp",
-        // Store the user stack pointer to `trap_context.user_register`
+        // Stores the user stack pointer to `trap_context.user_register`
         "sd t2, 2 * 8(sp)",
-        // Read `trap_context.kernel_satp` to t3
+        // Reads `trap_context.kernel_satp` to t3
         "ld t3, 35 * 8(sp)",
-        // Read the stack pointer from `trap_context.kernel_stack`
+        // Reads the stack pointer from `trap_context.kernel_stack`
         "ld sp, 34 * 8(sp)",
-        // Write the address of the page table of the kernel to satp
+        // Writes the address of the page table of the kernel to satp
         "csrw satp, t3",
         "sfence.vma",
-        // Read the return address, global pointer, thread pointer from the kernel stack
+        // Reads the return address, global pointer, thread pointer from the kernel stack
         "ld ra, 0 * 8(sp)",
         "ld gp, 1 * 8(sp)",
         "ld tp, 2 * 8(sp)",
-        // Store the callee-saved registers on the kernel stack
+        // Stores the callee-saved registers on the kernel stack
         "ld s0, 3 * 8(sp)",
         "ld s1, 4 * 8(sp)",
         "ld s2, 5 * 8(sp)",
@@ -190,13 +191,13 @@ unsafe extern "C" fn _enter_kernel_space() {
 unsafe extern "C" fn _enter_user_space(trap_context: &mut TrapContext, user_satp: usize) {
     asm!(
         ".p2align 2",
-        // allocate 15 words on the kernel stack
+        // Allocates 15 words on the kernel stack
         "addi sp, sp, -15 * 8",
-        // Store the return address, global pointer, thread pointer on the kernel stack
+        // Stores the return address, global pointer, thread pointer on the kernel stack
         "sd ra, 0 * 8(sp)",
         "sd gp, 1 * 8(sp)",
         "sd tp, 2 * 8(sp)",
-        // Store the callee-saved registers on the kernel stack
+        // Stores the callee-saved registers on the kernel stack
         "sd s0, 3 * 8(sp)",
         "sd s1, 4 * 8(sp)",
         "sd s2, 5 * 8(sp)",
@@ -209,23 +210,23 @@ unsafe extern "C" fn _enter_user_space(trap_context: &mut TrapContext, user_satp
         "sd s9, 12 * 8(sp)",
         "sd s10, 13 * 8(sp)",
         "sd s11, 14 * 8(sp)",
-        // Write the address of the page table of the process to satp
+        // Writes the address of the page table of the process to satp
         // and read the address of the page table of the kernel to a1
         "csrrw a1, satp, a1",
         "sfence.vma",
-        // Store the stack pointer to `trap_context.kernel_stack`
+        // Stores the stack pointer to `trap_context.kernel_stack`
         // and move the stack pointer to `trap_context`
         "sd sp, 34 * 8(a0)",
         "mv sp, a0",
-        // Store the address of the page table of the kernel to `trap_context.kernel_satp`
+        // Stores the address of the page table of the kernel to `trap_context.kernel_satp`
         "sd a1, 35 * 8(sp)",
-        // Read `trap_context.user_sstatus` to t0
+        // Reads `trap_context.user_sstatus` to t0
         "ld t0, 32 * 8(sp)",
         "csrw sstatus, t0",
-        // Read `trap_context.user_sepc` to t1
+        // Reads `trap_context.user_sepc` to t1
         "ld t1, 33 * 8(sp)",
         "csrw sepc, t1",
-        // Read the registers from `trap_context.user_register`
+        // Reads the registers from `trap_context.user_register`
         "ld zero, 0 * 8(sp)",
         "ld ra, 1 * 8(sp)",
         "ld gp, 3 * 8(sp)",
@@ -257,9 +258,9 @@ unsafe extern "C" fn _enter_user_space(trap_context: &mut TrapContext, user_satp
         "ld t4, 29 * 8(sp)",
         "ld t5, 30 * 8(sp)",
         "ld t6, 31 * 8(sp)",
-        // Save the address of `trap_context` to sscratch
+        // Saves the address of `trap_context` to sscratch
         "csrw sscratch, sp",
-        // Read the user stack pointer from `trap_context.user_register`
+        // Reads the user stack pointer from `trap_context.user_register`
         "ld sp, 2 * 8(sp)",
         "sret",
         options(noreturn)
