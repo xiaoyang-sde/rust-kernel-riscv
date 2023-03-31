@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["__stability","__static_ref_initialize","allocate_frame","deallocate_frame","init","kernel_end"],"static":["LAZY"],"struct":["FRAME_ALLOCATOR","FrameTracker","StackFrameAllocator"],"trait":["FrameAllocator"]};

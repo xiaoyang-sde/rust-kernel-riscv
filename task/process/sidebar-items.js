@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Status"],"fn":["__stability","__static_ref_initialize","get_process","insert_process","remove_process"],"static":["LAZY"],"struct":["PROCESS_MAP","Process","ProcessState"]};

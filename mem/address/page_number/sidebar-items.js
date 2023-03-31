@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["PAGE_NUMBER_SIZE"],"struct":["PageNumber","PageRange","PageRangeIterator"]};

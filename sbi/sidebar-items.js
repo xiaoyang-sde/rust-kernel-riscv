@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CONSOLE_GETCHAR_EXTENSION","CONSOLE_PUTCHAR_EXTENSION","SYSTEM_RESET_EXTENSION","TIMER_EXTENSION"],"fn":["console_getchar","console_putchar","sbi_call","set_timer","shutdown"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["frame_number","page_number","physical_address","virtual_address"]};

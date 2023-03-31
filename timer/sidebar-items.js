@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["TICK_PER_SEC"],"fn":["enable_timer_interrupt","get_time","set_trigger"]};

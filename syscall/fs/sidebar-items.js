@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["STDIN","STDOUT"],"opaque":[""]};

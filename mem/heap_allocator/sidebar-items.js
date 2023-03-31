@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["__rg_alloc","__rg_alloc_zeroed","__rg_dealloc","__rg_oom","__rg_realloc","handle_alloc_error","init"],"static":["HEAP_ALLOCATOR","KERNEL_HEAP"]};
