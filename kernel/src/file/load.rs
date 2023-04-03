@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
-use log::info;
 use core::{slice, str};
 
 use lazy_static::lazy_static;
+use log::info;
 
 extern "C" {
     fn _bin_count();

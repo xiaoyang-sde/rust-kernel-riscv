@@ -24,5 +24,5 @@ fn main() -> i32 {
     for _ in 0..MAX_CHILD {
         wait(&mut exit_code);
     }
-    return 0;
+    0
 }
