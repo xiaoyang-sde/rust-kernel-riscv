@@ -38,7 +38,7 @@ make qemu
 
 ### Executor
 
-The kernel executor handles the management and execution of tasks, which can be either user threads or kernel threads. In the current implementation, the `TaskQueue` is a wrapper around the `VecDeque<Runnable>` type, which store and execute tasks in a FIFO order. The `run_until_complete` function blocks the calling thread and runs all the tasks in the `TaskQueue`.
+The kernel executor handles the management and execution of tasks, which can be either user threads or kernel threads. As of the current implementation, the `TaskQueue` is a wrapper around the `VecDeque<Runnable>` type, which store and execute tasks in a FIFO order. The `run_until_complete` function blocks the calling thread and runs all the tasks in the `TaskQueue`.
 
 ```rs
 lazy_static! {
@@ -59,11 +59,11 @@ pub fn run_until_complete() {
 
 ### Trampoline
 
-The trampoline is a dedicated page that acts as a bridge for transferring control between supervisor and user modes. The trampoline is located at the same address (`0xFFFFFFFFFFFFF000`) in both kernel and user thread page tables. The trampoline is required because the program counter must point to a valid location after switching the page table.
+The trampoline is a dedicated page that acts as a bridge for transferring control between supervisor and user modes, which is located at the same address (`0xFFFFFFFFFFFFF000`) in both kernel and user thread page tables. Identical mapping is required because the program counter must point to a valid location after switching the page table.
 
 The trampoline contains a pair of naked functions, `_enter_kernel_space` and `_enter_user_space`:
 
-- `_enter_user_space` stores callee-saved registers on the kernel stack, switches to the page table of the user thread, and restores the context (registers, `sstatuc`, `sepc`) of the user thread from a `TrapContext`. Following these steps, it uses a sret instruction to return to user mode.
+- `_enter_user_space` stores callee-saved registers on the kernel stack, switches to the page table of the user thread, and restores the context (registers, `sstatuc`, `sepc`) of the user thread from a `TrapContext`. Following these steps, it uses a `sret` instruction to return to user mode.
 
 - `_enter_kernel_space` stores the context (registers, `sstatuc`, `sepc`) of the user thread to a `TrapContext`, switch to the page table of the kernel, and restores the callee-saved registers from the kernel stack. Following these steps, it uses a `ret` instruction to jump to the `thread_loop`, which will handle the exception or interrupt.
 
