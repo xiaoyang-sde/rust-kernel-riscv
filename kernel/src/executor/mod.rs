@@ -1,17 +1,22 @@
 //! The `executor` module provides an executor that schedules and runs both the kernel threads and
 //! the user threads.
 
-use alloc::collections::VecDeque;
+use alloc::boxed::Box;
 use core::future::Future;
 
 use async_task::{Runnable, Task};
 use lazy_static::lazy_static;
 use riscv::register::{stvec, utvec::TrapMode};
 
-use crate::{constant::TRAMPOLINE, sync::Mutex};
+use crate::{
+    constant::TRAMPOLINE,
+    executor::scheduler::{Scheduler, TaskQueue},
+    sync::Mutex,
+};
 
 mod context;
 mod future;
+mod scheduler;
 
 pub use context::TrapContext;
 pub use future::{spawn_thread, yield_now, ControlFlow};
@@ -24,30 +29,8 @@ pub fn init() {
     }
 }
 
-/// The `TaskQueue` struct represents a queue of [Runnable] tasks, which are either kernel threads
-/// or user threads.
-struct TaskQueue {
-    queue: VecDeque<Runnable>,
-}
-
-impl TaskQueue {
-    fn new() -> Self {
-        Self {
-            queue: VecDeque::new(),
-        }
-    }
-
-    fn push_back(&mut self, runnable: Runnable) {
-        self.queue.push_back(runnable)
-    }
-
-    fn pop_front(&mut self) -> Option<Runnable> {
-        self.queue.pop_front()
-    }
-}
-
 lazy_static! {
-    static ref TASK_QUEUE: Mutex<TaskQueue> = Mutex::new(TaskQueue::new());
+    static ref SCHEDULER: Mutex<Box<dyn Scheduler>> = Mutex::new(Box::new(TaskQueue::new()));
 }
 
 fn spawn<F>(future: F) -> (Runnable, Task<F::Output>)
@@ -56,7 +39,7 @@ where
     F::Output: Send + 'static,
 {
     async_task::spawn(future, |runnable| {
-        TASK_QUEUE.lock().push_back(runnable);
+        SCHEDULER.lock().schedule(runnable);
     })
 }
 
@@ -64,7 +47,7 @@ where
 /// left.
 pub fn run_until_complete() {
     loop {
-        let task = TASK_QUEUE.lock().pop_front();
+        let task = SCHEDULER.lock().task();
         if let Some(task) = task {
             task.run();
         } else {
